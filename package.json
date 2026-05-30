@@ -2,10 +2,13 @@
   "name": "@pakakas/markzero",
   "version": "1.0.0",
   "description": "MarkZero: an Agent Data Notation",
-  "main": "index.ts",
+  "main": "src/index.ts",
   "license": "ISC",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/pakakas/markzero.git"
+  },
+  "dependencies": {
+    "@pakakas/token": "^1.0.0"
   }
 }

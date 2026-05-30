@@ -1,202 +1,292 @@
 import {
   MZ_ID,
-  VALUE_MARKER,
+  CLOSE_MARKER,
   GRID_MARKER,
-  TITLE_MARKER,
-  COL_MARKER,
-  ROW_SEP,
   ROW_MARKER,
   KV_RELATION,
-  VALUE_REF,
-  EMPTY_SIZE,
-  INITIAL_COUNT,
-  INCREMENT,
-  DEFAULT_INDEX_LEN,
+  ROW_SEP,
+  COL_MARKER,
+  TITLE_MARKER,
+  escape,
   ENC_VALUES,
   ENC_INTERN_ALL,
-  isProfitable,
+  ENC_GRID_DEDUPLICATE,
+  GRID_REF,
+  VALUE_REF,
+  VALUE_MARKER,
   estimateTokenCount,
-  escape,
-  MAPPED_KEY
+  isProfitable
 } from "./util";
 
-// Minimum character length threshold (3). Interning strings shorter than 3 characters is mathematically
-// unprofitable because the VALUE_MARKER and pointer referencing costs ((VALUE_REF or GRID_REF) + index) will always exceed the original length.
-const MIN_POOL_TEXT_LENGTH = 3;
+type BlockWriter = {
+  writeSet: (blocks: any[], grid: any[], encodeFn: any) => string,
+  writeMap: (blocks: any[], grid: any, encodeFn: any) => string,
+  writeString: (blocks: any[], val: any, encodeFn: any) => string,
+  writeTitle: (blocks: any[], val: any, encodeFn: any) => string
+};
 
-/**
- * Encodes a 2D array or Array of Objects into a Grid string fragment.
- */
-function writeGrid(grid: any[], encodingMode?: number, value?: (val: any) => string): string {
-  if (grid.length === EMPTY_SIZE) return GRID_MARKER;
-  const isObjectSet = grid.length > EMPTY_SIZE && typeof grid[MAPPED_KEY] === 'object' && !Array.isArray(grid[MAPPED_KEY]) && grid[MAPPED_KEY] !== null;
+const MODE_DEFAULT = 0;
 
-  const resolve = value || ((val: any) => {
-    if (typeof val === 'object' && val !== null) return escape(encode(val, encodingMode));
-    return escape(String(val ?? ""));
-  });
+const encoders: any = {};
 
-  if (isObjectSet) {
-    const headers = Object.keys(grid[MAPPED_KEY]);
-    const headerRow = headers.map(header => (encodingMode === ENC_INTERN_ALL) ? resolve(header) : escape(header)).join(ROW_SEP);
-    const dataRows = grid.map(row => `${ROW_MARKER}${headers.map(header => resolve(row[header])).join(ROW_SEP)}`).join("");
-    return `${GRID_MARKER}${COL_MARKER}${headerRow}${dataRows}`;
-  } else {
-    const dataRows = grid.map((rowOrCell: any, index) => {
-      const rowContent = Array.isArray(rowOrCell)
-        ? rowOrCell.map(cell => resolve(cell)).join(ROW_SEP)
-        : resolve(rowOrCell);
-      return index === 0 ? rowContent : `${ROW_MARKER}${rowContent}`;
-    }).join("");
-    return `${GRID_MARKER}${dataRows}`;
+function isNestedStructure(val: any): boolean {
+  return typeof val === "object" && val !== null && !(val instanceof Date) && !(val instanceof RegExp);
+}
+
+function pushBlock(blocks: any[], serialized: string, deduplicate: boolean): string {
+  if (deduplicate) {
+    const existingIndex = blocks.indexOf(serialized);
+    if (existingIndex !== -1) {
+      return GRID_REF + existingIndex;
+    }
+  }
+  blocks.push(serialized);
+  return GRID_REF + (blocks.length - 1);
+}
+
+
+function isUniformGrid(arr: any[]): boolean {
+  return arr.every(item => typeof item === "object" && item !== null && !Array.isArray(item) && !(item instanceof Date) && !(item instanceof RegExp));
+}
+
+function is2DMatrix(arr: any[]): boolean {
+  return arr.every(item => Array.isArray(item));
+}
+
+function createEncoder(mode: number, writer: BlockWriter) {
+  encoders[mode] = function(blocks: any[], customEscape: (text: string, isKey?: boolean) => string, encodingMode: number = MODE_DEFAULT) {
+    const encodeFn = function(input: any): string {
+      let prefix = "";
+      if (input && typeof input === 'object' && 'title' in input && input.title) {
+        prefix = writer.writeTitle(blocks, input.title, encodeFn);
+      }
+      
+      let content = "";
+      if (Array.isArray(input)) {
+        content = writer.writeSet(blocks, input, encodeFn);
+      } else if (typeof input === 'object' && input !== null) {
+        content = writer.writeMap(blocks, input, encodeFn);
+      } else {
+        content = writer.writeString(blocks, input, encodeFn);
+      }
+      return prefix + content;
+    };
+    
+    (encodeFn as any).escape = customEscape;
+    (encodeFn as any).deduplicate = (encodingMode & ENC_GRID_DEDUPLICATE) !== 0;
+    
+    for (const target in writer) {
+      if (Object.prototype.hasOwnProperty.call(writer, target)) {
+        (encodeFn as any)[target] = function(value: any) {
+          return writer[target as keyof BlockWriter](blocks, value, encodeFn);
+        };
+      }
+    }
+    return encodeFn;
+  };
+  return encoders[mode];
+}
+
+createEncoder(MODE_DEFAULT, {
+  writeSet(blocks: any[], grid: any[], encodeFn: any) {
+    if (grid.length === 0) {
+      return GRID_MARKER + CLOSE_MARKER;
+    }
+    
+    const customEscape = encodeFn.escape;
+    
+    if (isUniformGrid(grid)) {
+      const headersSet = new Set<string>();
+      for (const item of grid) {
+        for (const k in item) {
+          if (k !== "title") {
+            headersSet.add(k);
+          }
+        }
+      }
+      const headers = Array.from(headersSet);
+      const headerRow = COL_MARKER + headers.map(h => customEscape(h, true)).join(ROW_SEP);
+      const rows = grid.map(item => {
+        return headers.map(header => {
+          const val = item[header];
+          if (val === undefined || val === null) return "";
+          if (isNestedStructure(val)) {
+            const serialized = encodeFn(val);
+            return pushBlock(blocks, serialized);
+          }
+          return customEscape(String(val), false);
+        }).join(ROW_SEP);
+      });
+      return GRID_MARKER + [headerRow, ...rows].join(ROW_MARKER) + CLOSE_MARKER;
+    }
+    
+    if (is2DMatrix(grid)) {
+      const rows = grid.map(row => {
+        return row.map((val: any) => {
+          if (val === undefined || val === null) return "";
+          if (isNestedStructure(val)) {
+            const serialized = encodeFn(val);
+            return pushBlock(blocks, serialized);
+          }
+          return customEscape(String(val), false);
+        }).join(ROW_SEP);
+      });
+      return GRID_MARKER + rows.join(ROW_MARKER) + CLOSE_MARKER;
+    }
+    
+    const items = grid.map(val => {
+      if (val === undefined || val === null) return "";
+      if (isNestedStructure(val)) {
+        const serialized = encodeFn(val);
+        return pushBlock(blocks, serialized, encodeFn.deduplicate);
+      }
+      return customEscape(String(val), false);
+    });
+    return GRID_MARKER + items.join(ROW_MARKER) + CLOSE_MARKER;
+  },
+  
+  writeMap(blocks: any[], grid: any, encodeFn: any) {
+    const customEscape = encodeFn.escape;
+    let mapStr = GRID_MARKER;
+    for (const k in grid) {
+      if (k === "title") continue;
+      const val = grid[k];
+      let valStr = "";
+      if (isNestedStructure(val)) {
+        const serialized = encodeFn(val);
+        valStr = pushBlock(blocks, serialized, encodeFn.deduplicate);
+      } else {
+        valStr = customEscape(String(val), false);
+      }
+      mapStr += ROW_MARKER + customEscape(k, true) + KV_RELATION + valStr;
+    }
+    return mapStr + CLOSE_MARKER;
+  },
+  
+  writeString(blocks: any[], val: any, encodeFn: any) {
+    return encodeFn.escape(String(val), false);
+  },
+  
+  writeTitle(blocks: any[], val: any, encodeFn: any) {
+    return TITLE_MARKER + escape(String(val)) + CLOSE_MARKER;
+  }
+});
+
+function buildTokenPool(input: any, mode: number): { pool: string[], refMap: Map<string, string> } {
+  const pool: string[] = [];
+  const refMap = new Map<string, string>();
+  const isValuesMode = (mode & ENC_VALUES) !== 0;
+  const isInternAllMode = (mode & ENC_INTERN_ALL) !== 0;
+  if (!isValuesMode && !isInternAllMode) {
+    return { pool, refMap };
+  }
+
+  const freqMap = new Map<string, number>();
+
+  function collect(val: any) {
+    if (val === null || val === undefined) return;
+    if (typeof val === "object") {
+      if (val instanceof Date || val instanceof RegExp) {
+        const s = String(val);
+        freqMap.set(s, (freqMap.get(s) || 0) + 1);
+      } else if (Array.isArray(val)) {
+        for (const item of val) {
+          collect(item);
+        }
+      } else {
+        for (const k in val) {
+          if (k === "title") continue;
+          // Collect both key and value as candidates in both modes
+          const sKey = String(k);
+          freqMap.set(sKey, (freqMap.get(sKey) || 0) + 1);
+          collect(val[k]);
+        }
+      }
+    } else if (typeof val === "string" || typeof val === "number" || typeof val === "boolean") {
+      const s = String(val);
+      freqMap.set(s, (freqMap.get(s) || 0) + 1);
+    }
+  }
+
+  collect(input);
+
+  const candidates: string[] = [];
+  for (const [str, freq] of freqMap.entries()) {
+    if (!str) continue;
+    const tokenLen = estimateTokenCount(str);
+    if (isProfitable(freq, tokenLen, 1)) {
+      candidates.push(str);
+    }
+  }
+
+  for (let i = 0; i < candidates.length; i++) {
+    const s = candidates[i]!;
+    pool.push(s);
+    refMap.set(s, VALUE_REF + i);
+  }
+
+  return { pool, refMap };
+}
+
+// AI Agent hanya membutuhkan representasi struktural/relasional kontekstual (Array/Object non-kosong)
+// untuk dapat bernalar (reasoning) secara efisien. Format berorientasi manusia atau struktur data primitif,
+// kosong (contoh: []), serta objek bawaan (seperti Date dan RegExp) ditolak karena tidak mengandung 
+// struktur semantik relasional yang dapat diurai oleh Agent.
+// Contoh input terstruktur yang valid: [meta, meta2, data] atau objek pasangan key-value.
+function assert(input: any): void {
+  if (
+    typeof input !== "object" || 
+    input === null || 
+    input instanceof Date || 
+    input instanceof RegExp ||
+    (Array.isArray(input) && input.length === 0) ||
+    (!Array.isArray(input) && Object.keys(input).length === 0)
+  ) {
+    throw new TypeError("Invalid input type. MarkZero encode only accepts non-empty Array or Object.");
   }
 }
 
-/**
- * Encodes data into MarkZero notation.
- */
-export function encode(input: any, encodingMode?: number): string {
-  const normalizedBlocks: any[] = [];
+function createMainBlock(input: any, encodeFn: any): string {
+  if (
+    Array.isArray(input) &&
+    // Array objek homogen (DoD/tabel) dibiarkan utuh sebagai satu grid tunggal
+    // Contoh: [{name: "a"}, {name: "b"}] -> isUniformGrid(input) === false
+    isUniformGrid(input) === false &&
+    // Matriks 2D homogen dibiarkan utuh sebagai satu matriks grid tunggal
+    // Contoh: [["1", "0"], ["0", "1"]] -> is2DMatrix(input) === false
+    is2DMatrix(input) === false &&
+    // Array heterogen bersarang layak dipecah menjadi multi-grid agar perhatian LLM lebih efisien
+    // Contoh: [{title: "Main"}, [["1", "0"]]] -> memicu pemecahan rekursif
+    input.some(isNestedStructure)
+  ) {
+    return input.map(item => encodeFn(item)).join("");
+  }
+
+  return encodeFn(input);
+}
+
+export function encode(input: any, encodingMode: number = MODE_DEFAULT): string {
+  assert(input);
   
-  let blocks: any[] = [];
-  if (Array.isArray(input)) {
-    const first = input[0];
-    
-    // Heuristic: If it's a 1D array of primitives (or empty array), treat as a single Set block
-    const is1DSet = input.length === 0 || (input.length > 0 && typeof first !== 'object');
-    
-    // Heuristic: If all elements are plain objects without titles, treat as a single Set block
-    const isUniformSet = input.length > 0 && input.every(item => 
-      typeof item === 'object' && item !== null && !item.title && !Array.isArray(item)
-    );
-
-    if (is1DSet || isUniformSet) {
-      blocks = [input];
-    } else {
-      blocks = input;
+  const { pool, refMap } = buildTokenPool(input, encodingMode);
+  
+  const customEscape = (text: string, isKey: boolean = false): string => {
+    const source = String(text ?? "");
+    if (isKey && (encodingMode & ENC_INTERN_ALL) === 0) {
+      return escape(source);
     }
-  } else {
-    blocks = [input];
-  }
-
-  blocks.forEach(block => {
-    if (Array.isArray(block)) {
-      normalizedBlocks.push(block);
-    } else if (typeof block === 'object' && block !== null) {
-      if (block.title) {
-        normalizedBlocks.push({ title: block.title });
-        const metadata: any = {};
-        Object.entries(block).forEach(([key, value]) => { if (key !== 'title') metadata[key] = value; });
-        if (Object.keys(metadata).length > EMPTY_SIZE) normalizedBlocks.push(metadata);
-      } else {
-        const metadata: any = {};
-        Object.entries(block).forEach(([key, value]) => { metadata[key] = value; });
-        normalizedBlocks.push(metadata);
-      }
+    if (refMap.has(source)) {
+      return refMap.get(source)!;
     }
-  });
-
-  if (normalizedBlocks.length === 0) return "";
-
-  const frequencyMap = new Map<string, number>();
-  const mapKeys = new Set<string>();
-
-  const collectFrequencies = (value: any) => {
-    if (typeof value === 'object' && value !== null) {
-        if (Array.isArray(value)) {
-            value.forEach(collectFrequencies);
-        } else {
-            Object.entries(value).forEach(([key, val]) => {
-                if (key !== 'title') {
-                    mapKeys.add(key);
-                    collectFrequencies(key);
-                    collectFrequencies(val);
-                }
-            });
-        }
-        return;
-    }
-    const text = String(value ?? "");
-    if (text === "") return;
-    frequencyMap.set(text, (frequencyMap.get(text) || INITIAL_COUNT) + INCREMENT);
+    return escape(source);
   };
 
-  normalizedBlocks.forEach(block => {
-    if (block.title) collectFrequencies(block.title);
-    else if (Array.isArray(block)) {
-      const isObjectSet = block.length > EMPTY_SIZE && typeof block[MAPPED_KEY] === 'object' && !Array.isArray(block[MAPPED_KEY]) && block[MAPPED_KEY] !== null;
-      if (isObjectSet) {
-        const headers = Object.keys(block[MAPPED_KEY]);
-        headers.forEach(collectFrequencies);
-        block.forEach(row => headers.forEach(header => collectFrequencies(row[header])));
-      } else {
-        block.forEach((row: any) => Array.isArray(row) ? row.forEach(collectFrequencies) : collectFrequencies(row));
-      }
-    } else {
-      Object.entries(block).forEach(([key, value]) => { 
-        mapKeys.add(key);
-        collectFrequencies(key); 
-        collectFrequencies(value); 
-      });
-    }
-  });
+  const blocks: any[] = [];
+  const baseMode = encodingMode & (ENC_VALUES | ENC_INTERN_ALL);
+  const encodeFn = (encoders[baseMode] || encoders[MODE_DEFAULT])(blocks, customEscape, encodingMode);
 
-  const poolMap = new Map<string, number>();
-  const poolArray: string[] = [];
-
-  // Map keys are only interned in the Token Pool in ENC_INTERN_ALL mode if profitable
-  if (encodingMode === ENC_INTERN_ALL) {
-    mapKeys.forEach(key => {
-      if (poolMap.has(key)) return;
-      if (key.length < MIN_POOL_TEXT_LENGTH) return;
-      const frequency = frequencyMap.get(key) ?? INCREMENT;
-      const tokenLength = estimateTokenCount(key);
-      if (isProfitable(frequency, tokenLength, DEFAULT_INDEX_LEN)) {
-        poolMap.set(key, poolArray.length);
-        poolArray.push(key);
-      }
-    });
-  }
-
-  // Values are only interned in ENC_VALUES or ENC_INTERN_ALL mode if profitable
-  if (encodingMode === ENC_VALUES || encodingMode === ENC_INTERN_ALL) {
-    frequencyMap.forEach((frequency, text) => {
-      if (poolMap.has(text)) return;
-
-      // Avoid interning structural markers if they were escaped as literals
-      if (text.length < MIN_POOL_TEXT_LENGTH) return; 
-
-      const tokenLength = estimateTokenCount(text);
-      const indexTokenLength = DEFAULT_INDEX_LEN; 
-
-      if (isProfitable(frequency, tokenLength, indexTokenLength)) {
-        poolMap.set(text, poolArray.length);
-        poolArray.push(text);
-      }
-    });
-  }
-
-  const resolve = (val: any): string => {
-    if (typeof val === 'object' && val !== null) {
-        return escape(encode(val, encodingMode));
-    }
-    const text = String(val ?? "");
-    return poolMap.has(text) ? `${VALUE_REF}${poolMap.get(text)}` : escape(text);
-  };
-
-  const payloadParts = normalizedBlocks.map(block => {
-    if (block.title) return `${TITLE_MARKER}${resolve(block.title)}`;
-    if (Array.isArray(block)) return writeGrid(block, encodingMode, resolve);
-    const metaItems = Object.entries(block)
-      .map(([key, val], index) => {
-          const k = resolve(key); // Map key is resolved (to ¤ pointer if in pool, or literal if not)
-          const value = resolve(val);
-          const rowContent = `${k}${KV_RELATION}${value}`;
-          return index === 0 ? rowContent : `${ROW_MARKER}${rowContent}`;
-      }).join("");
-    return `${GRID_MARKER}${metaItems}`;
-  });
-
-  const poolPart = poolArray.map(entry => `${VALUE_MARKER}${escape(entry)}`).join("");
-  return `${MZ_ID}${poolPart}${payloadParts.join("")}`;
+  const mainBlock = createMainBlock(input, encodeFn);
+  
+  const poolStr = pool.length > 0 ? VALUE_MARKER + pool.join(VALUE_MARKER) + CLOSE_MARKER : "";
+  return MZ_ID + poolStr + blocks.join("") + mainBlock;
 }

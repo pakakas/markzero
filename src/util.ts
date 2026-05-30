@@ -1,3 +1,5 @@
+export { estimateTokenCount } from "@pakakas/token";
+
 export const VALUE_MARKER = "·";       // MIDDLE DOT (U+00B7) - Vocab Prefix
 export const ESCAPE_CHAR = "Ɇ";        // LATIN CAPITAL LETTER E WITH STROKE (U+0246) - Escape marker
 export const GRID_MARKER = "ⓖ";       // CIRCLED LATIN SMALL LETTER G (U+24D6) – GRID (grid marker)
@@ -8,11 +10,12 @@ export const ROW_MARKER = "ʀ";         // LATIN LETTER SMALL CAPITAL R (U+0280)
 export const KV_RELATION = "→";        // RIGHTWARDS ARROW (U+2192) – KEY‑VALUE RELATION
 export const VALUE_REF = "¤";          // CURRENCY SIGN (U+00A4) – VALUE REFERENCE
 export const GRID_REF = "※";          // REFERENCE MARK (U+203B) – GRID REFERENCE
-export const MZ_ID = "ⓩ";             // CIRCLED LATIN SMALL LETTER Z (U+24E9) – START MARKER
+export const MZ_ID = "ⓜ";             // CIRCLED LATIN SMALL LETTER M (U+24DC) – START MARKER
+export const CLOSE_MARKER = "ⓩ";        // CIRCLED LATIN SMALL LETTER Z (U+24E9) – CLOSE MARKER
 
 export const ALL_MARKERS = [
   ESCAPE_CHAR, VALUE_MARKER, GRID_MARKER, TITLE_MARKER,
-  COL_MARKER, ROW_SEP, ROW_MARKER, KV_RELATION, VALUE_REF, GRID_REF, MZ_ID
+  COL_MARKER, ROW_SEP, ROW_MARKER, KV_RELATION, VALUE_REF, GRID_REF, MZ_ID, CLOSE_MARKER
 ];
 
 /**
@@ -20,6 +23,9 @@ export const ALL_MARKERS = [
  */
 export function escape(text: string): string {
   const source = String(text ?? "");
+  if (/^※\d+$/.test(source)) {
+    return source;
+  }
   let escaped = "";
   for (let i = 0; i < source.length; i++) {
     const char = source[i];
@@ -68,33 +74,7 @@ export const NOT_FOUND = -1;
 // Encoding Modes
 export const ENC_VALUES = 1;
 export const ENC_INTERN_ALL = 2;
-
-/**
- * Estimates token count using character scanner.
- */
-export function estimateTokenCount(text: string): number {
-  if (!text) return 0;
-  let totalTokens = 0;
-  let i = 0;
-  const len = text.length;
-  while (i < len) {
-    const charCode = text.charCodeAt(i);
-    if (charCode <= 32) {
-      totalTokens++;
-      while (i + 1 < len && text.charCodeAt(i + 1) <= 32) i++;
-    } else if ((charCode >= 48 && charCode <= 57) || (charCode >= 65 && charCode <= 90) || (charCode >= 97 && charCode <= 122) || (charCode >= 128)) {
-      totalTokens++;
-      while (i + 1 < len) {
-        const nextCode = text.charCodeAt(i + 1);
-        if ((nextCode >= 48 && nextCode <= 57) || (nextCode >= 65 && nextCode <= 90) || (nextCode >= 97 && nextCode <= 122) || (nextCode >= 128)) {
-          i++;
-        } else break;
-      }
-    } else { totalTokens++; }
-    i++;
-  }
-  return totalTokens;
-}
+export const ENC_GRID_DEDUPLICATE = 4;
 
 export function isProfitable(frequency: number, tokenLength: number, indexLength: number): boolean {
   const refCost = 1 + indexLength; // VALUE_REF (1) + index digits

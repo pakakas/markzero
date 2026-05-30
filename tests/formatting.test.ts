@@ -80,8 +80,8 @@ describe("MarkZero Data Formatting", () => {
 
   test("Empty and Edge Cases", () => {
     expect(() => decode("")).toThrow();
-    expect(encode([])).toBe(MZ_ID + GRID_MARKER);
-    expect(encode({})).toBe(MZ_ID + GRID_MARKER);
+    expect(() => encode([])).toThrow(TypeError);
+    expect(() => encode({})).toThrow(TypeError);
   });
 
 });

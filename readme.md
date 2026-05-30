@@ -7,6 +7,8 @@ _"Markup is for Screens. Markdown is for Docs. MarkZero is for Intelligence."_
 ## Documentation
 - [MarkZero Specification (v1)](skills/markzero/references/markzero-spec-v1.md)
 - [Spesifikasi MarkZero (v1) - Bahasa Indonesia](skills/markzero/references/markzero-spec-v1.id.md)
+- [MarkZero Encoder Specification (v1)](skills/markzero/references/markzero-encoder-spec-v1.md)
+- [Spesifikasi Encoder MarkZero (v1) - Bahasa Indonesia](skills/markzero/references/markzero-encoder-spec-v1.id.md)
 
 ## Installation
 

@@ -32,14 +32,14 @@ test("Git Log --name-only Use Case (Nested 1D Arrays)", () => {
 
   // Decode the data
   const decodedBlocks = decode(encoded);
-  const commits = decodedBlocks[0]; // First block is the grid of commits
+  const commits = decodedBlocks[decodedBlocks.length - 1]; // Main block is the last block of the decoded results
 
   // Validation
   expect(commits.length).toBe(2);
   expect(commits[0].commit).toBe("8d8a1a8feb4d5e0f4f879777852f05bb3ec8b337");
   
   // Checking the nested 'files' array
-  const firstFiles = commits[0].files[0]; // Nested MarkZero string decodes to an array of blocks
+  const firstFiles = commits[0].files; // Relational flat referencing resolves directly to the actual array of files
   console.log("\nDecoded 'files' for first commit:");
   console.log(JSON.stringify(firstFiles));
 

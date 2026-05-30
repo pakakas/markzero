@@ -1,6 +1,6 @@
 import { test, expect } from "bun:test";
 import { encode, ENC_VALUES, ENC_INTERN_ALL } from "../src/index";
-import { MZ_ID, GRID_MARKER, VALUE_REF, VALUE_MARKER } from "../src/util";
+import { MZ_ID, GRID_MARKER, VALUE_REF, VALUE_MARKER, ROW_MARKER } from "../src/util";
 
 const data = [
     { name: "item1", type: "regular-file-record", "app-config-spec": "active" }, 
@@ -42,6 +42,6 @@ test("ENC_INTERN_ALL Mode (Pool Everything)", () => {
   const result = encode(unifiedInput, ENC_INTERN_ALL);
   // Both keys and values should be interned if profitable
   expect(result).toContain(`${VALUE_MARKER}regular-file-record`);
-  expect(result).toContain(`${GRID_MARKER}${VALUE_REF}`); // Keys should be pointers
+  expect(result).toContain(`${GRID_MARKER}${ROW_MARKER}${VALUE_REF}`); // Keys should be pointers
   console.log("ENC_INTERN_ALL Mode Verified");
 });

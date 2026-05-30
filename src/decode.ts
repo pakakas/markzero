@@ -1,5 +1,6 @@
 import {
   MZ_ID,
+  CLOSE_MARKER,
   ESCAPE_CHAR,
   ESCAPE_SEQUENCE_LENGTH,
   VALUE_MARKER,
@@ -120,18 +121,19 @@ function readGrid(blockString: string, resolve: (value: string) => any): any {
 export function decode(m0String: string): any[] {
   if (!m0String) throw new Error("Input string is required");
 
-  const startsWithMZ = m0String.startsWith(MZ_ID);
+  const startIdx = m0String.indexOf(MZ_ID);
+  const startsWithMZ = startIdx !== -1;
   let pool: string[] = [];
   let cursor = 0;
   const blockMarkers = [GRID_MARKER, TITLE_MARKER];
 
   if (startsWithMZ) {
-    const poolStart = ID_OFFSET;
-    const { pos: poolEndRelative } = findBoundary(m0String, blockMarkers, poolStart);
+    const poolStart = startIdx + MZ_ID.length;
+    const { pos: poolEndRelative } = findBoundary(m0String, [CLOSE_MARKER, GRID_MARKER, TITLE_MARKER], poolStart);
     const poolEnd = poolEndRelative === NOT_FOUND ? m0String.length : poolEndRelative;
     const poolPart = m0String.substring(poolStart, poolEnd);
     pool = splitEscaped(poolPart, VALUE_MARKER).filter(item => item !== "");
-    cursor = poolEnd;
+    cursor = poolEndRelative !== NOT_FOUND && m0String[poolEndRelative] === CLOSE_MARKER ? poolEndRelative + CLOSE_MARKER.length : poolEnd;
   } else {
     cursor = 0;
   }
@@ -162,7 +164,11 @@ export function decode(m0String: string): any[] {
 
   while (cursor < m0String.length) {
     const marker = m0String[cursor];
-    const { pos: nextBoundary } = findBoundary(m0String, blockMarkers, cursor + ID_OFFSET);
+    if (!blockMarkers.includes(marker!)) {
+      break;
+    }
+
+    const { pos: nextBoundary } = findBoundary(m0String, [CLOSE_MARKER, GRID_MARKER, TITLE_MARKER], cursor + ID_OFFSET);
     const actualEnd = nextBoundary === NOT_FOUND ? m0String.length : nextBoundary;
     const content = m0String.substring(cursor + ID_OFFSET, actualEnd);
 
@@ -175,7 +181,7 @@ export function decode(m0String: string): any[] {
       decodedResults.push(decodedRows);
     }
 
-    cursor = actualEnd;
+    cursor = nextBoundary !== NOT_FOUND && m0String[nextBoundary] === CLOSE_MARKER ? nextBoundary + CLOSE_MARKER.length : actualEnd;
   }
 
   return decodedResults;
