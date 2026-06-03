@@ -1,5 +1,4 @@
 import {
-  MZ_ID,
   CLOSE_MARKER,
   GRID_MARKER,
   ROW_MARKER,
@@ -15,7 +14,8 @@ import {
   VALUE_REF,
   VALUE_MARKER,
   estimateTokenCount,
-  isProfitable
+  isProfitable,
+  MZ_ID
 } from "./util";
 
 type BlockWriter = {
@@ -57,8 +57,9 @@ function createEncoder(mode: number, writer: BlockWriter) {
   encoders[mode] = function(blocks: any[], customEscape: (text: string, isKey?: boolean) => string, encodingMode: number = MODE_DEFAULT) {
     const encodeFn = function(input: any): string {
       let prefix = "";
-      if (input && typeof input === 'object' && 'title' in input && input.title) {
-        prefix = writer.writeTitle(blocks, input.title, encodeFn);
+      const title = input && typeof input === 'object' ? (input[Symbol.for('title')] || input["Symbol(title)"]) : undefined;
+      if (title) {
+        prefix = writer.writeTitle(blocks, title, encodeFn);
       }
       
       let content = "";
@@ -90,7 +91,7 @@ function createEncoder(mode: number, writer: BlockWriter) {
 createEncoder(MODE_DEFAULT, {
   writeSet(blocks: any[], grid: any[], encodeFn: any) {
     if (grid.length === 0) {
-      return GRID_MARKER + CLOSE_MARKER;
+      return GRID_MARKER;
     }
     
     const customEscape = encodeFn.escape;
@@ -117,7 +118,7 @@ createEncoder(MODE_DEFAULT, {
           return customEscape(String(val), false);
         }).join(ROW_SEP);
       });
-      return GRID_MARKER + [headerRow, ...rows].join(ROW_MARKER) + CLOSE_MARKER;
+      return GRID_MARKER + [headerRow, ...rows].join(ROW_MARKER);
     }
     
     if (is2DMatrix(grid)) {
@@ -131,7 +132,7 @@ createEncoder(MODE_DEFAULT, {
           return customEscape(String(val), false);
         }).join(ROW_SEP);
       });
-      return GRID_MARKER + rows.join(ROW_MARKER) + CLOSE_MARKER;
+      return GRID_MARKER + rows.join(ROW_MARKER);
     }
     
     const items = grid.map(val => {
@@ -142,14 +143,14 @@ createEncoder(MODE_DEFAULT, {
       }
       return customEscape(String(val), false);
     });
-    return GRID_MARKER + items.join(ROW_MARKER) + CLOSE_MARKER;
+    return GRID_MARKER + items.join(ROW_MARKER);
   },
   
   writeMap(blocks: any[], grid: any, encodeFn: any) {
     const customEscape = encodeFn.escape;
     let mapStr = GRID_MARKER;
     for (const k in grid) {
-      if (k === "title") continue;
+      if (k === "Symbol(title)") continue;
       const val = grid[k];
       let valStr = "";
       if (isNestedStructure(val)) {
@@ -160,7 +161,7 @@ createEncoder(MODE_DEFAULT, {
       }
       mapStr += ROW_MARKER + customEscape(k, true) + KV_RELATION + valStr;
     }
-    return mapStr + CLOSE_MARKER;
+    return mapStr;
   },
   
   writeString(blocks: any[], val: any, encodeFn: any) {
@@ -168,7 +169,7 @@ createEncoder(MODE_DEFAULT, {
   },
   
   writeTitle(blocks: any[], val: any, encodeFn: any) {
-    return TITLE_MARKER + escape(String(val)) + CLOSE_MARKER;
+    return TITLE_MARKER + escape(String(val));
   }
 });
 
@@ -195,7 +196,7 @@ function buildTokenPool(input: any, mode: number): { pool: string[], refMap: Map
         }
       } else {
         for (const k in val) {
-          if (k === "title") continue;
+          if (k === "Symbol(title)") continue;
           // Collect both key and value as candidates in both modes
           const sKey = String(k);
           freqMap.set(sKey, (freqMap.get(sKey) || 0) + 1);
@@ -287,6 +288,6 @@ export function encode(input: any, encodingMode: number = MODE_DEFAULT): string 
 
   const mainBlock = createMainBlock(input, encodeFn);
   
-  const poolStr = pool.length > 0 ? VALUE_MARKER + pool.join(VALUE_MARKER) + CLOSE_MARKER : "";
+  const poolStr = pool.length > 0 ? VALUE_MARKER + pool.join(VALUE_MARKER) : "";
   return MZ_ID + poolStr + blocks.join("") + mainBlock;
 }

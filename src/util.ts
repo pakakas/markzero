@@ -1,7 +1,7 @@
 export { estimateTokenCount } from "@pakakas/token";
 
 export const VALUE_MARKER = "·";       // MIDDLE DOT (U+00B7) - Vocab Prefix
-export const ESCAPE_CHAR = "Ɇ";        // LATIN CAPITAL LETTER E WITH STROKE (U+0246) - Escape marker
+export const ESCAPE_CHAR = "ɛ";        // LATIN SMALL LETTER OPEN E (U+025B) - Escape marker
 export const GRID_MARKER = "ⓖ";       // CIRCLED LATIN SMALL LETTER G (U+24D6) – GRID (grid marker)
 export const TITLE_MARKER = "★";      // BLACK STAR (U+2605) – TITLE marker
 export const COL_MARKER = "ᴄ";         // LATIN LETTER SMALL CAPITAL C (U+1D04) – COLUMN marker
@@ -11,7 +11,7 @@ export const KV_RELATION = "→";        // RIGHTWARDS ARROW (U+2192) – KEY‑
 export const VALUE_REF = "¤";          // CURRENCY SIGN (U+00A4) – VALUE REFERENCE
 export const GRID_REF = "※";          // REFERENCE MARK (U+203B) – GRID REFERENCE
 export const MZ_ID = "ⓜ";             // CIRCLED LATIN SMALL LETTER M (U+24DC) – START MARKER
-export const CLOSE_MARKER = "ⓩ";        // CIRCLED LATIN SMALL LETTER Z (U+24E9) – CLOSE MARKER
+export const CLOSE_MARKER = "ⓩ";      // CIRCLED LATIN SMALL LETTER Z (U+24E9) – CLOSE MARKER
 
 export const ALL_MARKERS = [
   ESCAPE_CHAR, VALUE_MARKER, GRID_MARKER, TITLE_MARKER,

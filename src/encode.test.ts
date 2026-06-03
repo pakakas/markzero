@@ -1,6 +1,6 @@
 import { expect, test, describe } from "bun:test";
 import { encode, decode, ENC_GRID_DEDUPLICATE } from "./index";
-import { MZ_ID, GRID_MARKER, ROW_MARKER, KV_RELATION, GRID_REF, COL_MARKER, ROW_SEP } from "./util";
+import { GRID_MARKER, ROW_MARKER, KV_RELATION, GRID_REF, COL_MARKER, ROW_SEP } from "./util";
 
 describe("MarkZero Encoder (Default Mode)", () => {
   test("throws TypeError for primitive, empty, or irrelevant inputs", () => {
@@ -20,22 +20,22 @@ describe("MarkZero Encoder (Default Mode)", () => {
   test("encodes an array (Set)", () => {
     const input = ["a", "b", "c"];
     const result = encode(input);
-    // MZ_ID + GRID_MARKER + a + ROW_MARKER + b + ROW_MARKER + c + "ⓩ"
-    expect(result).toBe(MZ_ID + GRID_MARKER + "a" + ROW_MARKER + "b" + ROW_MARKER + "c" + "ⓩ");
+    // GRID_MARKER + a + ROW_MARKER + b + ROW_MARKER + c
+    expect(result).toBe(GRID_MARKER + "a" + ROW_MARKER + "b" + ROW_MARKER + "c");
   });
 
   test("encodes an object (Map)", () => {
     const input = { key: "value" };
     const result = encode(input);
-    // MZ_ID + GRID_MARKER + ROW_MARKER + key + KV_RELATION + value + "ⓩ"
-    expect(result).toBe(MZ_ID + GRID_MARKER + ROW_MARKER + "key" + KV_RELATION + "value" + "ⓩ");
+    // GRID_MARKER + ROW_MARKER + key + KV_RELATION + value
+    expect(result).toBe(GRID_MARKER + ROW_MARKER + "key" + KV_RELATION + "value");
   });
 
   test("encodes grid references (※0) without escaping at the top-level", () => {
     const input = { ref: GRID_REF + "0" };
     const result = encode(input);
     // Should preserve GRID_REF + 0 as is (no escape) because of the grid ref bypass
-    expect(result).toBe(MZ_ID + GRID_MARKER + ROW_MARKER + "ref" + KV_RELATION + GRID_REF + "0" + "ⓩ");
+    expect(result).toBe(GRID_MARKER + ROW_MARKER + "ref" + KV_RELATION + GRID_REF + "0");
   });
 
 
@@ -53,9 +53,9 @@ describe("MarkZero Encoder (Default Mode)", () => {
     // Grid 0 (addresses): ⓖʀline1→jl bandungʀline2→jl riauⓩ
     // Grid 1 (outer object): ⓖʀname→hyuʀaddresses→※0ⓩ
     const expected = 
-      MZ_ID + 
-      GRID_MARKER + ROW_MARKER + "line1" + KV_RELATION + "jl bandung" + ROW_MARKER + "line2" + KV_RELATION + "jl riau" + "ⓩ" +
-      GRID_MARKER + ROW_MARKER + "name" + KV_RELATION + "hyu" + ROW_MARKER + "addresses" + KV_RELATION + GRID_REF + "0" + "ⓩ";
+      
+      GRID_MARKER + ROW_MARKER + "line1" + KV_RELATION + "jl bandung" + ROW_MARKER + "line2" + KV_RELATION + "jl riau" +
+      GRID_MARKER + ROW_MARKER + "name" + KV_RELATION + "hyu" + ROW_MARKER + "addresses" + KV_RELATION + GRID_REF + "0";
     
     expect(result).toBe(expected);
   });
@@ -76,10 +76,10 @@ describe("MarkZero Encoder (Default Mode)", () => {
     // Grid 1 (middle cause): ⓖʀcode→501ʀcause→※0ⓩ
     // Grid 2 (main object): ⓖʀcode→500ʀcause→※1ⓩ
     const expected =
-      MZ_ID +
-      GRID_MARKER + ROW_MARKER + "code" + KV_RELATION + "502" + "ⓩ" +
-      GRID_MARKER + ROW_MARKER + "code" + KV_RELATION + "501" + ROW_MARKER + "cause" + KV_RELATION + GRID_REF + "0" + "ⓩ" +
-      GRID_MARKER + ROW_MARKER + "code" + KV_RELATION + "500" + ROW_MARKER + "cause" + KV_RELATION + GRID_REF + "1" + "ⓩ";
+       +
+      GRID_MARKER + ROW_MARKER + "code" + KV_RELATION + "502" +
+      GRID_MARKER + ROW_MARKER + "code" + KV_RELATION + "501" + ROW_MARKER + "cause" + KV_RELATION + GRID_REF + "0" +
+      GRID_MARKER + ROW_MARKER + "code" + KV_RELATION + "500" + ROW_MARKER + "cause" + KV_RELATION + GRID_REF + "1";
     
     expect(result).toBe(expected);
   });
@@ -130,24 +130,24 @@ describe("MarkZero Encoder (Default Mode)", () => {
     
     // Verify the correct flattened multi-grid representation is produced
     const expected =
-      MZ_ID +
+       +
       // Grid 0 (stack trace of outer error)
       GRID_MARKER + COL_MARKER + "at" + ROW_SEP + "file" + ROW_SEP + "line" + 
       ROW_MARKER + "fetchUserProfile" + ROW_SEP + "/app/src/api.ts" + ROW_SEP + "120:5" +
-      ROW_MARKER + "loadData" + ROW_SEP + "/app/src/main.ts" + ROW_SEP + "45:10" + "ⓩ" +
+      ROW_MARKER + "loadData" + ROW_SEP + "/app/src/main.ts" + ROW_SEP + "45:10" +
       // Grid 1 (stack trace of middle cause)
       GRID_MARKER + COL_MARKER + "at" + ROW_SEP + "file" + ROW_SEP + "line" + 
       ROW_MARKER + "Socket.onTimeout" + ROW_SEP + "node:net" + ROW_SEP + "950:12" +
-      ROW_MARKER + "process.processTicksAndRejections" + ROW_SEP + "node:internal/process/task_queues" + ROW_SEP + "95:5" + "ⓩ" +
+      ROW_MARKER + "process.processTicksAndRejections" + ROW_SEP + "node:internal/process/task_queues" + ROW_SEP + "95:5" +
       // Grid 2 (stack trace of deepest cause)
       GRID_MARKER + COL_MARKER + "at" + ROW_SEP + "file" + ROW_SEP + "line" + 
-      ROW_MARKER + "TCP.onStreamRead" + ROW_SEP + "node:internal/stream_base_commons" + ROW_SEP + "190:23" + "ⓩ" +
+      ROW_MARKER + "TCP.onStreamRead" + ROW_SEP + "node:internal/stream_base_commons" + ROW_SEP + "190:23" +
       // Grid 3 (deepest cause object)
-      GRID_MARKER + ROW_MARKER + "error" + KV_RELATION + "ECONNREFUSED 127.0.0.1:5432" + ROW_MARKER + "stack" + KV_RELATION + GRID_REF + "2" + "ⓩ" +
+      GRID_MARKER + ROW_MARKER + "error" + KV_RELATION + "ECONNREFUSED 127.0.0.1:5432" + ROW_MARKER + "stack" + KV_RELATION + GRID_REF + "2" +
       // Grid 4 (middle cause object)
-      GRID_MARKER + ROW_MARKER + "error" + KV_RELATION + "Connection timeout" + ROW_MARKER + "stack" + KV_RELATION + GRID_REF + "1" + ROW_MARKER + "cause" + KV_RELATION + GRID_REF + "3" + "ⓩ" +
+      GRID_MARKER + ROW_MARKER + "error" + KV_RELATION + "Connection timeout" + ROW_MARKER + "stack" + KV_RELATION + GRID_REF + "1" + ROW_MARKER + "cause" + KV_RELATION + GRID_REF + "3" +
       // Grid 5 (main outer error object)
-      GRID_MARKER + ROW_MARKER + "error" + KV_RELATION + "Failed to fetch user profile" + ROW_MARKER + "stack" + KV_RELATION + GRID_REF + "0" + ROW_MARKER + "cause" + KV_RELATION + GRID_REF + "4" + "ⓩ";
+      GRID_MARKER + ROW_MARKER + "error" + KV_RELATION + "Failed to fetch user profile" + ROW_MARKER + "stack" + KV_RELATION + GRID_REF + "0" + ROW_MARKER + "cause" + KV_RELATION + GRID_REF + "4";
 
     expect(encoded).toBe(expected);
 
@@ -181,9 +181,9 @@ describe("MarkZero Encoder (Default Mode)", () => {
     // Grid 0 (deduplicated role map): ⓖʀrole→adminʀlevel→5ⓩ
     // Grid 1 (main outer object): ⓖʀalice→※0ʀbob→※0ⓩ
     const expected =
-      MZ_ID +
-      GRID_MARKER + ROW_MARKER + "role" + KV_RELATION + "admin" + ROW_MARKER + "level" + KV_RELATION + "5" + "ⓩ" +
-      GRID_MARKER + ROW_MARKER + "alice" + KV_RELATION + GRID_REF + "0" + ROW_MARKER + "bob" + KV_RELATION + GRID_REF + "0" + "ⓩ";
+       +
+      GRID_MARKER + ROW_MARKER + "role" + KV_RELATION + "admin" + ROW_MARKER + "level" + KV_RELATION + "5" +
+      GRID_MARKER + ROW_MARKER + "alice" + KV_RELATION + GRID_REF + "0" + ROW_MARKER + "bob" + KV_RELATION + GRID_REF + "0";
       
     expect(encoded).toBe(expected);
     

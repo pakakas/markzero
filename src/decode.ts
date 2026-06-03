@@ -1,5 +1,4 @@
 import {
-  MZ_ID,
   CLOSE_MARKER,
   ESCAPE_CHAR,
   ESCAPE_SEQUENCE_LENGTH,
@@ -17,6 +16,7 @@ import {
   ID_OFFSET,
   ALL_MARKERS,
   unescape,
+  MZ_ID
 } from "./util";
 
 
@@ -121,22 +121,19 @@ function readGrid(blockString: string, resolve: (value: string) => any): any {
 export function decode(m0String: string): any[] {
   if (!m0String) throw new Error("Input string is required");
 
-  const startIdx = m0String.indexOf(MZ_ID);
-  const startsWithMZ = startIdx !== -1;
+  if (m0String.startsWith(MZ_ID)) {
+    m0String = m0String.substring(MZ_ID.length);
+  }
+
   let pool: string[] = [];
   let cursor = 0;
   const blockMarkers = [GRID_MARKER, TITLE_MARKER];
 
-  if (startsWithMZ) {
-    const poolStart = startIdx + MZ_ID.length;
-    const { pos: poolEndRelative } = findBoundary(m0String, [CLOSE_MARKER, GRID_MARKER, TITLE_MARKER], poolStart);
-    const poolEnd = poolEndRelative === NOT_FOUND ? m0String.length : poolEndRelative;
-    const poolPart = m0String.substring(poolStart, poolEnd);
-    pool = splitEscaped(poolPart, VALUE_MARKER).filter(item => item !== "");
-    cursor = poolEndRelative !== NOT_FOUND && m0String[poolEndRelative] === CLOSE_MARKER ? poolEndRelative + CLOSE_MARKER.length : poolEnd;
-  } else {
-    cursor = 0;
-  }
+  const { pos: poolEndRelative } = findBoundary(m0String, [CLOSE_MARKER, GRID_MARKER, TITLE_MARKER], 0);
+  const poolEnd = poolEndRelative === NOT_FOUND ? m0String.length : poolEndRelative;
+  const poolPart = m0String.substring(0, poolEnd);
+  pool = splitEscaped(poolPart, VALUE_MARKER).filter(item => item !== "");
+  cursor = poolEndRelative !== NOT_FOUND && m0String[poolEndRelative] === CLOSE_MARKER ? poolEndRelative + CLOSE_MARKER.length : poolEnd;
 
   const decodedResults: any[] = [];
   const resolve = (value: string): any => {
@@ -151,11 +148,7 @@ export function decode(m0String: string): any[] {
       raw = unescape(value);
     }
 
-    // Heuristic: If the raw value looks like MarkZero (starts with start marker), 
-    // recursively decode it.
-    if (raw && raw.startsWith(MZ_ID)) {
-        return decode(raw);
-    }
+    // Note: Recursive MZ decoding heuristic was removed because MZ_ID is now purely protocol-level.
     return raw;
   };
 
@@ -177,12 +170,15 @@ export function decode(m0String: string): any[] {
     }
     else if (marker === GRID_MARKER) {
       const decodedRows = readGrid(marker + content, resolve);
-      if (currentTitle) { (decodedRows as any).title = currentTitle; currentTitle = ""; }
+      if (currentTitle) {
+        decodedRows[Symbol.for('title')] = currentTitle;
+        currentTitle = "";
+      }
       decodedResults.push(decodedRows);
     }
 
     cursor = nextBoundary !== NOT_FOUND && m0String[nextBoundary] === CLOSE_MARKER ? nextBoundary + CLOSE_MARKER.length : actualEnd;
   }
 
-  return decodedResults;
+  return [...pool, ...decodedResults];
 }

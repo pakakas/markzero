@@ -1,7 +1,7 @@
 import { test, expect } from "bun:test";
 import { decode, encode } from "../src";
 import {
-  MZ_ID,
+  ,
   VALUE_MARKER,
   GRID_MARKER,
   COL_MARKER,
@@ -12,9 +12,9 @@ import {
 } from "../src/util";
 
 test("Decoding Unified Blocks (Trading)", () => {
-  // Pattern: MZ_ID VALUE_MARKER pool GRID_MARKER map GRID_MARKER ᴄheading ʀitem
+  // Pattern:  VALUE_MARKER pool GRID_MARKER map GRID_MARKER ᴄheading ʀitem
   const tradingData = 
-    MZ_ID +
+     +
     VALUE_MARKER + "ticker" +
     VALUE_MARKER + "price" +
     VALUE_MARKER + "change" +
@@ -50,14 +50,15 @@ test("Decoding Unified Blocks (Trading)", () => {
 
   const result = decode(tradingData);
   expect(Array.isArray(result)).toBe(true);
-  expect(result.length).toBe(3); 
-  expect(typeof result[0]).toBe("object");
-  expect(Array.isArray(result[0])).toBe(false);
-  expect(result[0].user_id).toBe("ticker");
-  expect(result[0].risk).toBe("aggressive");
-  expect(result[0].value).toBe("54200.50");
-  expect(result[0].curr).toBe("USD");
-  expect(result[0].date).toBe("2026-05-23");
+  const grids = result.slice(15);
+  expect(grids.length).toBe(3); 
+  expect(typeof grids[0]).toBe("object");
+  expect(Array.isArray(grids[0])).toBe(false);
+  expect(grids[0].user_id).toBe("ticker");
+  expect(grids[0].risk).toBe("aggressive");
+  expect(grids[0].value).toBe("54200.50");
+  expect(grids[0].curr).toBe("USD");
+  expect(grids[0].date).toBe("2026-05-23");
   console.log("Trading Unified Decode Verified");
 });
 

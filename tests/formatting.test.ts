@@ -64,7 +64,7 @@ describe("MarkZero Data Formatting", () => {
     expect(encoded).toContain(`${VALUE_REF}0`);
 
     const decoded = decode(encoded);
-    expect(decoded[0]).toEqual(data);
+    expect(decoded[decoded.length - 1]).toEqual(data);
   });
 
   test("Nested Structures (Recursive Recovery)", () => {

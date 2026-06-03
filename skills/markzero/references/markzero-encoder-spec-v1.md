@@ -1,7 +1,7 @@
-# MarkZero Encoder Optimization & Relational Flattening Specification (v1)
+# ADN Encoder Optimization (MarkZero Protocol v1)
 
 ## Overview
-While the **MarkZero Specification** governs payload structure and decoding rules, the **Encoder Specification** governs the strategies and algorithms used to translate complex, nested runtime data structures into highly compressed, token-efficient MarkZero payloads.
+While the **ADN Specification** governs payload structure and decoding rules, the **Encoder Specification** governs the strategies and algorithms used to translate complex, nested runtime data structures into highly compressed, token-efficient ADN payloads.
 
 An encoder's primary objective is to maximize LLM **Attention Efficiency** by:
 1. **Relational Data-Flattening**: Converting hierarchical, deeply nested structures into a flat stream of independent, cross-referenced grid blocks.

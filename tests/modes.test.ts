@@ -1,6 +1,6 @@
 import { test, expect } from "bun:test";
 import { encode, ENC_VALUES, ENC_INTERN_ALL } from "../src/index";
-import { MZ_ID, GRID_MARKER, VALUE_REF, VALUE_MARKER, ROW_MARKER } from "../src/util";
+import { GRID_MARKER, VALUE_REF, VALUE_MARKER, ROW_MARKER } from "../src/util";
 
 const data = [
     { name: "item1", type: "regular-file-record", "app-config-spec": "active" }, 
@@ -25,7 +25,7 @@ test("Always Literal Mode (Default)", () => {
   const result = encode(unifiedInput);
   // Should NOT have a pool part after first block start
   // In MarkZero (pure notation), it starts directly with the block marker
-  expect(result.startsWith(MZ_ID)).toBe(true);
+  expect(result.startsWith()).toBe(true);
   expect(result).toContain("regular-file-record");
   console.log("Literal Mode Verified");
 });

@@ -5,11 +5,25 @@
 ## Ringkasan
 **MarkZero** adalah format serialisasi AI-native yang sangat efisien yang dirancang khusus untuk Large Language Models. Format ini merepresentasikan data dalam ruang laten multi-dimensi, yang dioptimalkan untuk atensi AI ketimbang hierarki visual manusia.
 
-| Tingkat Antarmuka | Jenis Notasi | Arah Atensi | Target Penerima |
-| :--- | :--- | :--- | :--- |
-| **User Interface (UI)** | **Mark-UP** | Ke Atas | Mata Manusia |
-| **Developer Interface (DX)** | **Mark-DOWN** | Linear | Logika Manusia |
-| **Agent Interface (AX)** | **MarkZero** | **Omni (N-Dim)** | **Atensi AI** |
+### Klasifikasi Representasi: Human IR vs. Agent IR
+Melalui serangkaian diskusi dan perumusan filosofis, sistem representasi logika pemrograman dan notasi data dikelompokkan ke dalam dua kategori utama berdasarkan bagaimana batasan struktural didefinisikan:
+
+1. **Human IR (Human Intermediate Representation / Interface Representation)**:
+   - **Karakteristik Utama**: Mengandalkan **visual block delimiters** (seperti kurung kurawal `{ }`, kurung siku `[ ]`, koma, indentasi, dan kutipan bersarang) untuk menyusun hierarki data.
+   - **Tujuan**: Dioptimalkan agar mata manusia dapat mengenali batasan (*scope*) dan kedalaman bersarang (*nesting*) secara visual.
+   - **Batas AI-Native**: Meskipun format ramah-AI seperti *Zerolang* menggunakan kata-kata manusia (yang sebenarnya sangat *native* bagi LLM), penulisannya masih terikat pada paradigma **Human IR** karena masih mengandalkan struktur blok visual (`{ }`) ala JSON.
+   - **Kelemahan bagi AI**: Memaksa AI melakukan parsing pada kurung penutup yang bersarang, memicu overhead token yang besar pada sintaksis visual buatan, serta rawan terhadap kegagalan penafsiran hierarki yang mendalam.
+
+2. **Agent IR (Agent Intermediate Representation / Interface Representation)**:
+   - **Karakteristik Utama**: Membuang seluruh batas visual berpasangan (`{ }`) dan menggantinya dengan sistem **perataan relasional datar (flat relational referencing)** menggunakan penanda struktural 1-token (seperti `ⓟ` / `ⓜ`, `·`, `¤`, `ⓖ`, `※`).
+   - **Tujuan**: Mengizinkan kata-kata manusia (yang merupakan bahasa asli LLM) mengalir bebas tanpa sekat visual buatan. Struktur data diratakan secara non-linier dan langsung dipetakan ke dalam ruang atensi serta latent space AI secara ekstrem dan hemat token.
+   - **MZHAO sebagai Agent IR Sejati**: Protokol **MZHAO** (ditandai dengan trigger `ⓟ`) dirancang murni sebagai Agent IR. Ia mentransmisikan data bantuan (*help messages*) dan instruksi dari alat bantu CLI ke AI Agent dalam bentuk grid datar dan referensi, menghilangkan kurung visual murni dan hanya menyajikan visualisasi tabel kemanusiaan (ASCII) ketika dipanggil secara eksplisit oleh manusia menggunakan bendera `--ascii`.
+
+| Kategori (IR) | Batasan Struktural | Tingkat Antarmuka | Jenis Notasi | Target Penerima |
+| :--- | :--- | :--- | :--- | :--- |
+| **Human IR** | Blok Visual (`{ }`, `[ ]`, koma) | **User Interface (UI)** | **Mark-UP** | Mata Manusia |
+| **Human IR** | Teks Linier & Blok Visual | **Developer Interface (DX)** | **Mark-DOWN** / *Zerolang* | Logika Manusia |
+| **Agent IR** | Referensi Relasional Datar (`※`, `¤`) | **Agent Interface (AX)** | **MarkZero / MZHAO** | **Atensi AI (Latent)** |
 
 ## 1. Penanda Struktural (Structural Markers)
 
@@ -26,7 +40,7 @@
 | **Grid Ref** | `※` | U+203B (REFERENCE MARK) | Portal ke blok data yang telah didefinisikan sebelumnya (berdasarkan Indeks). |
 | **Title Marker** | `★` | U+2605 (BLACK STAR) | Penanda awalan untuk judul blok data. |
 | **Close Marker** | `ⓩ` | U+24E9 (CIRCLED LATIN SMALL LETTER Z) | Menutup blok secara simetris (bersifat sepenuhnya opsional). |
-| **Escaper** | `Ɇ` | U+0246 (LATIN CAPITAL LETTER E WITH STROKE) | Digunakan untuk meng-escape penanda struktural di dalam konten literal. |
+| **Escaper** | `ɛ` | U+025B (LATIN SMALL LETTER OPEN E) | Digunakan untuk meng-escape penanda struktural di dalam konten literal. |
 
 ---
 
@@ -49,9 +63,9 @@ MarkZero dilengkapi fitur-fitur mutakhir yang dirancang untuk efisiensi data eks
 - **Empty Collections**: Map kosong `{}` dan List/Set kosong `[]` secara konsisten diserialisasikan menjadi bentuk struktural paling minimal: `ⓜⓖⓩ` (Start Marker + Grid Start + Close Marker).
 - **Unresolvable Referencing**: Grid referencing yang tidak terpetakan atau yang mengandung referensi diri (*self-reference*) atau ketergantungan melingkar (*circular dependency*) (contoh: `※0` yang mereferensikan indeks grid `0` sewaktu mendekode dirinya sendiri) akan diselesaikan menjadi `null` demi mencegah rekursi tak terbatas.
 
-### 2.2 Penanda Escaper (`Ɇ`)
-Guna menjamin tidak terjadinya tabrakan data (*collision*) bahkan ketika membahas format notasi ini sendiri, setiap penanda struktural yang ditemukan di dalam teks literal wajib di-escape dengan didahului oleh penanda **Escaper (`Ɇ`)**:
-*   **Karakter Penanda Literal**: Untuk menyertakan karakter struktural (seperti `¦`, `ⓖ`, `★`, `ᴄ`, atau `ʀ`) sebagai teks literal biasa, tambahkan awalan: `Ɇ¦`, `Ɇⓖ`, `Ɇ★`, `Ɇᴄ`, `Ɇʀ`.
-*   **Escaper Literal**: Untuk menyertakan karakter `Ɇ` sebagai teks literal biasa, karakter tersebut harus ditulis ganda: `ɆɆ`.
+### 2.2 Penanda Escaper (`ɛ`)
+Guna menjamin tidak terjadinya tabrakan data (*collision*) bahkan ketika membahas format notasi ini sendiri, setiap penanda struktural yang ditemukan di dalam teks literal wajib di-escape dengan didahului oleh penanda **Escaper (`ɛ`)**:
+*   **Karakter Penanda Literal**: Untuk menyertakan karakter struktural (seperti `¦`, `ⓖ`, `★`, `ᴄ`, atau `ʀ`) sebagai teks literal biasa, tambahkan awalan: `ɛ¦`, `ɛⓖ`, `ɛ★`, `ɛᴄ`, `ɛʀ`.
+*   **Escaper Literal**: Untuk menyertakan karakter `ɛ` sebagai teks literal biasa, karakter tersebut harus ditulis ganda: `ɛɛ`.
 
 *Spesifikasi Resmi MarkZero - Senin, 25 Mei 2026*
