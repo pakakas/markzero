@@ -56,6 +56,15 @@ To avoid expensive regex or heavy sub-tokenizers, encoders use a zero-allocation
 - **Alphanumeric Blocks**: Consecutive alphabetic letters or digits represent **1 token**.
 - **Whitespace**: Consecutive newlines or whitespace represent **1 token**.
 
+### 3.3 Trailing Separator Omission
+When encoding grid rows, encoders strip trailing `¦` (Row Separator) characters when the last cells are empty. Since the column header defines the schema, decoders can infer missing trailing cells as empty strings (`""`).
+
+**Example**: A 3-column grid (`name`, `parent`, `desc`) where `desc` is empty:
+- Before: `ʀagent¦maintenis/pakakas¦` (2 `¦` separators)
+- After: `ʀagent¦maintenis/pakakas` (1 `¦` separator)
+
+This saves **one token per omitted trailing cell** — significant when many rows share the same pattern of empty last columns.
+
 ---
 
 ## 4. Encoding Modes (Compression Strategies)

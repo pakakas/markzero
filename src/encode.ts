@@ -5,7 +5,6 @@ import {
   KV_RELATION,
   ROW_SEP,
   COL_MARKER,
-  TITLE_MARKER,
   escape,
   ENC_VALUES,
   ENC_INTERN_ALL,
@@ -21,8 +20,7 @@ import {
 type BlockWriter = {
   writeSet: (blocks: any[], grid: any[], encodeFn: any) => string,
   writeMap: (blocks: any[], grid: any, encodeFn: any) => string,
-  writeString: (blocks: any[], val: any, encodeFn: any) => string,
-  writeTitle: (blocks: any[], val: any, encodeFn: any) => string
+  writeString: (blocks: any[], val: any, encodeFn: any) => string
 };
 
 const MODE_DEFAULT = 0;
@@ -53,15 +51,16 @@ function is2DMatrix(arr: any[]): boolean {
   return arr.every(item => Array.isArray(item));
 }
 
+/** Strip trailing empty cells to save tokens — decoder infers missing cells as "" */
+function trimTrailing(cells: string[]): string[] {
+  let end = cells.length;
+  while (end > 0 && cells[end - 1] === "") end--;
+  return cells.slice(0, end);
+}
+
 function createEncoder(mode: number, writer: BlockWriter) {
   encoders[mode] = function(blocks: any[], customEscape: (text: string, isKey?: boolean) => string, encodingMode: number = MODE_DEFAULT) {
     const encodeFn = function(input: any): string {
-      let prefix = "";
-      const title = input && typeof input === 'object' ? (input[Symbol.for('title')] || input["Symbol(title)"]) : undefined;
-      if (title) {
-        prefix = writer.writeTitle(blocks, title, encodeFn);
-      }
-      
       let content = "";
       if (Array.isArray(input)) {
         content = writer.writeSet(blocks, input, encodeFn);
@@ -70,7 +69,7 @@ function createEncoder(mode: number, writer: BlockWriter) {
       } else {
         content = writer.writeString(blocks, input, encodeFn);
       }
-      return prefix + content;
+      return content;
     };
     
     (encodeFn as any).escape = customEscape;
@@ -95,6 +94,8 @@ createEncoder(MODE_DEFAULT, {
     }
     
     const customEscape = encodeFn.escape;
+    const title = grid[Symbol.for('title')] || grid["Symbol(title)"];
+    const titleStr = title ? escape(String(title)) : "";
     
     if (isUniformGrid(grid)) {
       const headersSet = new Set<string>();
@@ -108,7 +109,7 @@ createEncoder(MODE_DEFAULT, {
       const headers = Array.from(headersSet);
       const headerRow = COL_MARKER + headers.map(h => customEscape(h, true)).join(ROW_SEP);
       const rows = grid.map(item => {
-        return headers.map(header => {
+        const cells = headers.map(header => {
           const val = item[header];
           if (val === undefined || val === null) return "";
           if (isNestedStructure(val)) {
@@ -116,21 +117,23 @@ createEncoder(MODE_DEFAULT, {
             return pushBlock(blocks, serialized);
           }
           return customEscape(String(val), false);
-        }).join(ROW_SEP);
+        });
+        return trimTrailing(cells).join(ROW_SEP);
       });
-      return GRID_MARKER + [headerRow, ...rows].join(ROW_MARKER);
+      return GRID_MARKER + titleStr + [headerRow, ...rows].join(ROW_MARKER);
     }
     
     if (is2DMatrix(grid)) {
       const rows = grid.map(row => {
-        return row.map((val: any) => {
+        const cells = row.map((val: any) => {
           if (val === undefined || val === null) return "";
           if (isNestedStructure(val)) {
             const serialized = encodeFn(val);
             return pushBlock(blocks, serialized);
           }
           return customEscape(String(val), false);
-        }).join(ROW_SEP);
+        });
+        return trimTrailing(cells).join(ROW_SEP);
       });
       return GRID_MARKER + rows.join(ROW_MARKER);
     }
@@ -166,10 +169,6 @@ createEncoder(MODE_DEFAULT, {
   
   writeString(blocks: any[], val: any, encodeFn: any) {
     return encodeFn.escape(String(val), false);
-  },
-  
-  writeTitle(blocks: any[], val: any, encodeFn: any) {
-    return TITLE_MARKER + escape(String(val));
   }
 });
 
@@ -289,5 +288,5 @@ export function encode(input: any, encodingMode: number = MODE_DEFAULT): string 
   const mainBlock = createMainBlock(input, encodeFn);
   
   const poolStr = pool.length > 0 ? VALUE_MARKER + pool.join(VALUE_MARKER) : "";
-  return MZ_ID + poolStr + blocks.join("") + mainBlock;
+  return poolStr + blocks.join("") + mainBlock;
 }

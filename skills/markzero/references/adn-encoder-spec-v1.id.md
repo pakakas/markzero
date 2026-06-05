@@ -56,6 +56,15 @@ Untuk menghindari regex yang mahal atau sub-tokenizer yang berat, encoder menggu
 - **Blok Alfanumerik**: Blok huruf atau angka yang berurutan dihitung sebagai **1 token**.
 - **Spasi/Newline**: Karakter baris baru atau spasi putih yang berurutan dihitung sebagai **1 token**.
 
+### 3.3 Penghilangan Separator Trailing
+Saat meng-encode baris grid, encoder menghilangkan karakter `¦` (Row Separator) trailing ketika sel-sel terakhir kosong. Karena header kolom mendefinisikan skema, decoder dapat mengisi sel trailing yang hilang sebagai string kosong (`""`).
+
+**Contoh**: Grid 3 kolom (`name`, `parent`, `desc`) di mana `desc` kosong:
+- Sebelum: `ʀagent¦maintenis/pakakas¦` (2 separator `¦`)
+- Sesudah: `ʀagent¦maintenis/pakakas` (1 separator `¦`)
+
+Ini menghemat **satu token per sel trailing yang dihilangkan** — signifikan ketika banyak baris memiliki pola kolom terakhir kosong yang sama.
+
 ---
 
 ## 4. Mode Encoding (Strategi Kompresi)

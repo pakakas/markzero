@@ -6,7 +6,7 @@ description: Guidance for MarkZero, the Agent Interface (AX) standard. Focuses o
 # ADN (via MarkZero Protocol)
 
 **ADN (Agent Data Notation)** is an AI-native serialization format. Unlike human-centric formats (Markup/Markdown), it uses 1-token non-linear markers to represent data as a multi-dimensional field, optimized for AI attention rather than visual hierarchy.
-**MarkZero** is the protocol envelope (`ⓜ` and `ⓩ`) used by the **MZHAO Parser** to safely embed ADN data within human text streams.
+**MarkZero** is the protocol envelope used by the **MZHAO Parser** to safely embed ADN data within human text streams. See [MarkZero Protocol Specification](references/markzero-spec.md).
 
 ## Structural Markers
 
@@ -17,12 +17,11 @@ Every structural marker is exactly **1 token** in modern LLMs (e.g., GPT-4o).
 | **Value Marker** | `·` | U+00B7 (MIDDLE DOT) | Prefixes an interned string inside the Token Pool. |
 | **Grid Marker** | `ⓖ` | U+24D6 (CIRCLED LATIN SMALL LETTER G) | Marks the start of a Grid block. |
 | **Row Marker** | `ʀ` | U+0280 (LATIN LETTER SMALL CAPITAL R) | Marks a Set item, a Map property, or a Grid row. |
-| **Heading Marker** | `ᴄ` | U+1D04 (LATIN LETTER SMALL CAPITAL C) | Marks the heading section in a Grid. |
-| **Row Separator** | `¦` | U+00A6 (BROKEN BAR) | Separates cells in a Grid row. |
+| **Column Marker** | `ᴄ` | U+1D04 (LATIN LETTER SMALL CAPITAL C) | Marks the heading section in a Grid. |
+| **Row Separator** | `¦` | U+00A6 (BROKEN BAR) | Separates cells in a Grid row. Trailing `¦` for empty last cells may be omitted. |
 | **Relation Binder** | `→` | U+2192 (RIGHTWARDS ARROW) | Binds a key to a value in a Map property. |
 | **Value Ref** | `¤` | U+00A4 (CURRENCY SIGN) | References a string from the Token Pool via index (`¤0`). |
 | **Grid Ref** | `※` | U+203B (REFERENCE MARK) | References a Grid from the pool via index (`※0`). |
-| **Title Marker** | `★` | U+2605 (BLACK STAR) | Prefix for block titles. |
 | **Escaper** | `ɛ` | U+025B (LATIN SMALL LETTER OPEN E) | Used to escape structural markers found within content. |
 
 ### The Escaping Rule
@@ -47,7 +46,7 @@ If a literal value needs to contain any of the structural markers above (includi
 
 ### 3. Titled Grid (2D Set)
 ```mz-ascii
-★Filesⓖᴄname¦sizeʀindex.ts¦1024ʀutil.ts¦2048
+ⓖFilesᴄname¦sizeʀindex.ts¦1024ʀutil.ts¦2048
 ```
 
-*For technical specifications and types, see `markzero/skills/markzero/references/markzero-spec-v1.md`.*
+*For technical specifications and types, see [ADN Specification](references/adn-spec-v1.md).*
