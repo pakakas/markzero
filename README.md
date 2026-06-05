@@ -15,10 +15,12 @@ To manage the streaming boundaries between human conversation and machine data, 
 
 
 ## Documentation
-- [MarkZero Specification (v1)](skills/markzero/references/markzero-spec-v1.md)
-- [Spesifikasi MarkZero (v1) - Bahasa Indonesia](skills/markzero/references/markzero-spec-v1.id.md)
-- [MarkZero Encoder Specification (v1)](skills/markzero/references/markzero-encoder-spec-v1.md)
-- [Spesifikasi Encoder MarkZero (v1) - Bahasa Indonesia](skills/markzero/references/markzero-encoder-spec-v1.id.md)
+- [MarkZero Protocol Specification](skills/markzero/references/markzero-spec.md)
+- [Spesifikasi MarkZero Protocol](skills/markzero/references/markzero-spec.id.md)
+- [ADN Specification](skills/markzero/references/adn-spec-v1.md)
+- [Spesifikasi ADN - Bahasa Indonesia](skills/markzero/references/adn-spec-v1.id.md)
+- [ADN Encoder Specification](skills/markzero/references/adn-encoder-spec-v1.md)
+- [Spesifikasi Encoder ADN - Bahasa Indonesia](skills/markzero/references/adn-encoder-spec-v1.id.md)
 
 ## Installation
 
