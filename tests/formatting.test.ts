@@ -1,12 +1,7 @@
 import { test, expect, describe } from "bun:test";
 import { encode, decode, ENC_VALUES } from "../src/index";
 import {
-  ESCAPE_CHAR,
-  GRID_MARKER,
-  ROW_SEP,
-  VALUE_MARKER,
-  VALUE_REF,
-  KV_RELATION,
+  MARKERS,
   MZ_ID,
 } from "../src/util";
 
@@ -26,31 +21,29 @@ describe("MarkZero Data Formatting", () => {
     expect(decoded[0]).toEqual(["apple", "banana", "cherry"]);
   });
 
+  test("1D Set (List) with explicit row marker on first row", () => {
+    // Both forms are valid: anon (no leading ROW_MARKER) and explicit (with leading ROW_MARKER).
+    // Decoder must accept either form.
+    const explicit = "░→apple→banana→cherry";
+    const decodedExplicit = decode(explicit);
+    expect(decodedExplicit[0]).toEqual(["apple", "banana", "cherry"]);
+
+    const anon = "░apple→banana→cherry";
+    const decodedAnon = decode(anon);
+    expect(decodedAnon[0]).toEqual(["apple", "banana", "cherry"]);
+  });
+
   test("2D Grid (Table)", () => {
     const data = [
       { name: "hyuze", role: "admin" },
-      { name: "guest", role: "user" }
+      { name: "alice", role: "dev" }
     ];
     const encoded = encode(data);
     const decoded = decode(encoded);
     expect(decoded[0]).toEqual(data);
   });
 
-  test("Escaping (Structural Markers in Content)", () => {
-    const data = { 
-      note: `Sign: ${ESCAPE_CHAR}, Marker: ${GRID_MARKER}, Separator: ${ROW_SEP}`
-    };
-    const encoded = encode(data);
-    // Encoded should contain escaped markers (prefixed with ESCAPE_CHAR)
-    expect(encoded).toContain(`${ESCAPE_CHAR}${ESCAPE_CHAR}`);
-    expect(encoded).toContain(`${ESCAPE_CHAR}${GRID_MARKER}`);
-    expect(encoded).toContain(`${ESCAPE_CHAR}${ROW_SEP}`);
-    
-    const decoded = decode(encoded);
-    expect(decoded[0]).toEqual(data);
-  });
-
-  test("Interning (Token Pool Optimization)", () => {
+  test("Interning (Value Pool Optimization)", () => {
     // Repeated long string should be interned
     const longString = "This is a very long string that should definitely be interned for efficiency.";
     const data = [
@@ -59,23 +52,59 @@ describe("MarkZero Data Formatting", () => {
     ];
     const encoded = encode(data, ENC_VALUES);
     // Should have a pool entry
-    expect(encoded).toContain(VALUE_MARKER + longString);
-    // Should have a reference pointer (¤0)
-    expect(encoded).toContain(`${VALUE_REF}0`);
+    expect(encoded).toContain(MARKERS.VALUE_MARKER + longString);
+    // Should have a reference pointer (VALUE_REF 0)
+    expect(encoded).toContain(`${MARKERS.VALUE_REF}0`);
 
     const decoded = decode(encoded);
     expect(decoded[decoded.length - 1]).toEqual(data);
   });
 
-  test("Nested Structures (Recursive Recovery)", () => {
+  test("Implicit/Contextual Escaping (UPPER_CASE_PLACEHOLDER & Context-Based Decoding)", () => {
     const data = {
-      title: "Root",
-      config: `${GRID_MARKER}mode${KV_RELATION}debug` // String containing ADN
+      note: "Sign: М, Marker: ░, Row: →"
     };
     const encoded = encode(data);
-    const decoded = decode(encoded);
-    // Escaping should preserve the inner ADN string literal
-    expect(decoded[0].config).toBe(`${GRID_MARKER}mode${KV_RELATION}debug`);
+    // Serialized output should use UPPER_CASE_PLACEHOLDER constants
+    expect(encoded).toContain("MESSAGE_START");
+    expect(encoded).toContain("GRID_MARKER");
+    expect(encoded).toContain("ROW_MARKER");
+
+    // Decode with context that maps placeholders back to concrete characters
+    const context = {
+      unescape: (text: string) => {
+        return text
+          .replaceAll("MESSAGE_START", "М")
+          .replaceAll("GRID_MARKER", "░")
+          .replaceAll("ROW_MARKER", "→");
+      }
+    };
+    const decoded = decode(encoded, context);
+    expect(decoded[0]).toEqual(data);
+
+    // Decode without passing context explicitly should also decode perfectly
+    // using the default unescaping behavior.
+    const decodedDefault = decode(encoded);
+    expect(decodedDefault[0]).toEqual(data);
+  });
+
+  test("Implicit/Contextual Escaping with Custom Context Escaper", () => {
+    const data = {
+      note: "Sign: М, Marker: ░, Row: →"
+    };
+    // Custom context that replaces markers with a custom notation
+    const context = {
+      escaper: (text: string) => {
+        return text
+          .replaceAll("М", "[START]")
+          .replaceAll("░", "[GRID]")
+          .replaceAll("→", "[ROW]");
+      }
+    };
+    const encoded = encode(data, context);
+    expect(encoded).toContain("[START]");
+    expect(encoded).toContain("[GRID]");
+    expect(encoded).toContain("[ROW]");
   });
 
   test("Empty and Edge Cases", () => {

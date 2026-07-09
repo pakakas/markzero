@@ -1,62 +1,61 @@
 export { estimateTokenCount } from "@pakakas/token";
 
-export const VALUE_MARKER = "·";       // MIDDLE DOT (U+00B7) - Vocab Prefix
-export const ESCAPE_CHAR = "ɛ";        // LATIN SMALL LETTER OPEN E (U+025B) - Escape marker
-export const GRID_MARKER = "ⓖ";       // CIRCLED LATIN SMALL LETTER G (U+24D6) – GRID (grid marker)
-export const TITLE_MARKER = "★";      // BLACK STAR (U+2605) – TITLE marker
-export const COL_MARKER = "ᴄ";         // LATIN LETTER SMALL CAPITAL C (U+1D04) – COLUMN marker
-export const ROW_SEP = "¦";            // BROKEN BAR (U+00A6) – ROW SEPARATOR
-export const ROW_MARKER = "ʀ";         // LATIN LETTER SMALL CAPITAL R (U+0280) – ROW PREFIX
-export const KV_RELATION = "→";        // RIGHTWARDS ARROW (U+2192) – KEY‑VALUE RELATION
-export const VALUE_REF = "¤";          // CURRENCY SIGN (U+00A4) – VALUE REFERENCE
-export const GRID_REF = "※";          // REFERENCE MARK (U+203B) – GRID REFERENCE
-export const MZ_ID = "ⓜ";             // CIRCLED LATIN SMALL LETTER M (U+24DC) – START MARKER
-export const CLOSE_MARKER = "ⓩ";      // CIRCLED LATIN SMALL LETTER Z (U+24E9) – CLOSE MARKER
+export const MARKERS = {
+  VALUE_MARKER: "·",       // MIDDLE DOT (U+00B7) - Vocab Prefix
+  GRID_MARKER: "░",        // LIGHT SHADE (U+2591) – GRID marker
+  COL_MARKER: "§",         // SECTION SIGN (U+00A7) – COLUMN marker
+  ROW_SEP: "¦",            // BROKEN BAR (U+00A6) – ROW SEPARATOR
+  ROW_MARKER: "→",         // RIGHTWARDS ARROW (U+2192) – ROW PREFIX
+  KV_RELATION: "≡",        // IDENTICAL TO (U+2261) – KEY‑VALUE RELATION
+  VALUE_REF: "¤",          // CURRENCY SIGN (U+00A4) – VALUE REFERENCE
+  GRID_REF: "※",          // REFERENCE MARK (U+203B) – GRID REFERENCE
+  BOOL_TRUE: "◆",         // BLACK DIAMOND (U+25C6) – BOOLEAN TRUE
+  BOOL_FALSE: "◇",        // WHITE DIAMOND (U+25C7) – BOOLEAN FALSE
+  NULL_MARKER: "○",        // WHITE CIRCLE (U+25CB) – NULL VALUE
+  TITLE_MARKER: "†",       // DAGGER (U+2020) – TITLE MARKER
+  MESSAGE_START: "М",      // CYRILLIC CAPITAL LETTER EM (U+041C) – MESSAGE START MARKER
 
-export const ALL_MARKERS = [
-  ESCAPE_CHAR, VALUE_MARKER, GRID_MARKER, TITLE_MARKER,
-  COL_MARKER, ROW_SEP, ROW_MARKER, KV_RELATION, VALUE_REF, GRID_REF, MZ_ID, CLOSE_MARKER
-];
+  // 2 berikut ini deprecated per new `AI chat document` design
+  MZ_ENVELOPE_START: "М",  // CYRILLIC CAPITAL LETTER EM (U+041C) – START MARKER // use MESSAGE_START
+  MZ_ENVELOPE_END: "О",    // CYRILLIC CAPITAL LETTER O (U+041E) – CLOSE MARKER  // akan dibuang
+} as const;
+
+export const TITLE_SYMBOL = Symbol.for("title"); // Symbol key for bound title (exposed by decoder)
+export const MZ_ID = "MZ";              // MarkZero identifier
 
 /**
- * Escapes MarkZero markers in a string by prefixing them with the ESCAPE_CHAR.
+ * Escapes MarkZero markers by replacing them with UPPER_CASE_PLACEHOLDER strings.
+ * Delegates to context.escaper or context.escape if provided.
  */
-export function escape(text: string): string {
+export function escape(text: string, context?: any): string {
+  if (context && typeof context.escaper === "function") {
+    return context.escaper(text);
+  }
+  if (context && typeof context.escape === "function") {
+    return context.escape(text);
+  }
   const source = String(text ?? "");
-  if (/^※\d+$/.test(source)) {
+  if (/^[※¤]\d+$/.test(source)) {
     return source;
   }
-  let escaped = "";
-  for (let i = 0; i < source.length; i++) {
-    const char = source[i];
-    if (ALL_MARKERS.includes(char!)) {
-      escaped += ESCAPE_CHAR + char;
-    } else {
-      escaped += char;
-    }
+  let result = source;
+  for (const [placeholder, char] of Object.entries(MARKERS)) {
+    if (placeholder === "VALUE_MARKER") continue;
+    result = result.replaceAll(char, placeholder);
   }
-  return escaped;
+  return result;
 }
 
 /**
- * Unescapes MarkZero strings. Removes the escape character prefix.
+ * Unescapes MarkZero strings by replacing placeholder strings with raw MZ/ADN characters.
  */
 export function unescape(text: string): string {
-  const source = String(text ?? "");
-  let unescaped = "";
-  for (let i = 0; i < source.length; i++) {
-    const char = source[i];
-    if (char === ESCAPE_CHAR) { // Explicitly check for escape char
-        // If next character is a marker, skip the whole escape sequence
-        if (i + ESCAPE_SEQUENCE_LENGTH <= source.length && ALL_MARKERS.includes(source[i + ESCAPE_CHAR.length]!)) {
-            unescaped += source[i + ESCAPE_CHAR.length];
-            i += ESCAPE_SEQUENCE_LENGTH - 1;
-            continue;
-        }
-    }
-    unescaped += source[i];
+  let result = String(text ?? "");
+  for (const [placeholder, char] of Object.entries(MARKERS)) {
+    if (placeholder === "VALUE_MARKER") continue;
+    result = result.replaceAll(placeholder, char);
   }
-  return unescaped;
+  return result;
 }
 
 // Numeric Constants
@@ -65,7 +64,7 @@ export const INITIAL_COUNT = 0;
 export const INCREMENT = 1;
 export const DEFAULT_INDEX_LEN = 1;
 export const DECIMAL_RADIX = 10;
-export const ESCAPE_SEQUENCE_LENGTH = ESCAPE_CHAR.length + 1;
+export const ESCAPE_SEQUENCE_LENGTH = 0;
 export const ID_OFFSET = 1;
 export const MAPPED_KEY = 0;
 export const MAPPED_VAL = 1;

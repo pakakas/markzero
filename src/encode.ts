@@ -1,21 +1,24 @@
 import {
-  CLOSE_MARKER,
-  GRID_MARKER,
-  ROW_MARKER,
-  KV_RELATION,
-  ROW_SEP,
-  COL_MARKER,
+  MARKERS,
+  TITLE_SYMBOL,
   escape,
   ENC_VALUES,
   ENC_INTERN_ALL,
   ENC_GRID_DEDUPLICATE,
-  GRID_REF,
-  VALUE_REF,
-  VALUE_MARKER,
   estimateTokenCount,
   isProfitable,
-  MZ_ID
 } from "./util";
+
+function readTitle(grid: any): string {
+  return String(grid[TITLE_SYMBOL] || "");
+}
+
+function scalarToString(val: any): string {
+  if (val === true) return MARKERS.BOOL_TRUE;
+  if (val === false) return MARKERS.BOOL_FALSE;
+  if (val === null || val === undefined) return MARKERS.NULL_MARKER;
+  return String(val);
+}
 
 type BlockWriter = {
   writeSet: (blocks: any[], grid: any[], encodeFn: any) => string,
@@ -35,11 +38,11 @@ function pushBlock(blocks: any[], serialized: string, deduplicate: boolean): str
   if (deduplicate) {
     const existingIndex = blocks.indexOf(serialized);
     if (existingIndex !== -1) {
-      return GRID_REF + existingIndex;
+      return MARKERS.GRID_REF + (existingIndex + 1);
     }
   }
   blocks.push(serialized);
-  return GRID_REF + (blocks.length - 1);
+  return MARKERS.GRID_REF + blocks.length;
 }
 
 
@@ -90,13 +93,12 @@ function createEncoder(mode: number, writer: BlockWriter) {
 createEncoder(MODE_DEFAULT, {
   writeSet(blocks: any[], grid: any[], encodeFn: any) {
     if (grid.length === 0) {
-      return GRID_MARKER;
+      return MARKERS.GRID_MARKER;
     }
     
     const customEscape = encodeFn.escape;
-    const title = grid[Symbol.for('title')] || grid["Symbol(title)"];
-    const titleStr = title ? escape(String(title)) : "";
-    
+    const ctx = encodeFn.context;
+
     if (isUniformGrid(grid)) {
       const headersSet = new Set<string>();
       for (const item of grid) {
@@ -107,51 +109,65 @@ createEncoder(MODE_DEFAULT, {
         }
       }
       const headers = Array.from(headersSet);
-      const headerRow = COL_MARKER + headers.map(h => customEscape(h, true)).join(ROW_SEP);
+      const headerRow = MARKERS.COL_MARKER + headers.map(h => customEscape(h, true)).join(MARKERS.ROW_SEP);
       const rows = grid.map(item => {
         const cells = headers.map(header => {
           const val = item[header];
-          if (val === undefined || val === null) return "";
+          if (val === undefined || val === null) return MARKERS.NULL_MARKER;
           if (isNestedStructure(val)) {
             const serialized = encodeFn(val);
-            return pushBlock(blocks, serialized);
+            return pushBlock(blocks, serialized, false);
           }
-          return customEscape(String(val), false);
+          return customEscape(scalarToString(val), false);
         });
-        return trimTrailing(cells).join(ROW_SEP);
+        return trimTrailing(cells).join(MARKERS.ROW_SEP);
       });
-      return GRID_MARKER + titleStr + [headerRow, ...rows].join(ROW_MARKER);
+      const title = readTitle(grid);
+      // When title is present AND col header is present, title is implicit (no TITLE_MARKER).
+      // When title is present AND no col header, TITLE_MARKER is REQUIRED.
+      const titleStr = title
+        ? (headers.length > 0 ? escape(title, ctx) : MARKERS.TITLE_MARKER + escape(title, ctx))
+        : "";
+      return MARKERS.GRID_MARKER + titleStr + [headerRow, ...rows].join(MARKERS.ROW_MARKER);
     }
-    
+
     if (is2DMatrix(grid)) {
+      const title = readTitle(grid);
+      const titleStr = title ? MARKERS.TITLE_MARKER + escape(title, ctx) : "";
       const rows = grid.map(row => {
         const cells = row.map((val: any) => {
-          if (val === undefined || val === null) return "";
+          if (val === undefined || val === null) return MARKERS.NULL_MARKER;
           if (isNestedStructure(val)) {
             const serialized = encodeFn(val);
-            return pushBlock(blocks, serialized);
+            return pushBlock(blocks, serialized, false);
           }
-          return customEscape(String(val), false);
+          return customEscape(scalarToString(val), false);
         });
-        return trimTrailing(cells).join(ROW_SEP);
+        return trimTrailing(cells).join(MARKERS.ROW_SEP);
       });
-      return GRID_MARKER + rows.join(ROW_MARKER);
+      if (rows.length === 0) return MARKERS.GRID_MARKER;
+      // Anonymous matrix (no bound title): first row's ROW_MARKER is optional.
+      return MARKERS.GRID_MARKER + titleStr + rows.map((r, i) => title || i > 0 ? MARKERS.ROW_MARKER + r : r).join("");
     }
     
     const items = grid.map(val => {
-      if (val === undefined || val === null) return "";
+      if (val === undefined || val === null) return MARKERS.NULL_MARKER;
       if (isNestedStructure(val)) {
         const serialized = encodeFn(val);
         return pushBlock(blocks, serialized, encodeFn.deduplicate);
       }
-      return customEscape(String(val), false);
+      return customEscape(scalarToString(val), false);
     });
-    return GRID_MARKER + items.join(ROW_MARKER);
+    if (items.length === 0) return MARKERS.GRID_MARKER;
+    const title = readTitle(grid);
+    const titleStr = title ? MARKERS.TITLE_MARKER + escape(title, ctx) : "";
+    // Anonymous set (no bound title, no col header): first item's ROW_MARKER is optional.
+    return MARKERS.GRID_MARKER + titleStr + items.map((it, i) => title || i > 0 ? MARKERS.ROW_MARKER + it : it).join("");
   },
   
   writeMap(blocks: any[], grid: any, encodeFn: any) {
     const customEscape = encodeFn.escape;
-    let mapStr = GRID_MARKER;
+    let mapStr = MARKERS.GRID_MARKER;
     for (const k in grid) {
       if (k === "Symbol(title)") continue;
       const val = grid[k];
@@ -160,19 +176,19 @@ createEncoder(MODE_DEFAULT, {
         const serialized = encodeFn(val);
         valStr = pushBlock(blocks, serialized, encodeFn.deduplicate);
       } else {
-        valStr = customEscape(String(val), false);
+        valStr = customEscape(scalarToString(val), false);
       }
-      mapStr += ROW_MARKER + customEscape(k, true) + KV_RELATION + valStr;
+      mapStr += MARKERS.ROW_MARKER + customEscape(k, true) + MARKERS.KV_RELATION + valStr;
     }
     return mapStr;
   },
   
   writeString(blocks: any[], val: any, encodeFn: any) {
-    return encodeFn.escape(String(val), false);
+    return encodeFn.escape(scalarToString(val), false);
   }
 });
 
-function buildTokenPool(input: any, mode: number): { pool: string[], refMap: Map<string, string> } {
+function buildValuePool(input: any, mode: number): { pool: string[], refMap: Map<string, string> } {
   const pool: string[] = [];
   const refMap = new Map<string, string>();
   const isValuesMode = (mode & ENC_VALUES) !== 0;
@@ -222,7 +238,7 @@ function buildTokenPool(input: any, mode: number): { pool: string[], refMap: Map
   for (let i = 0; i < candidates.length; i++) {
     const s = candidates[i]!;
     pool.push(s);
-    refMap.set(s, VALUE_REF + i);
+    refMap.set(s, MARKERS.VALUE_REF + i);
   }
 
   return { pool, refMap };
@@ -265,28 +281,39 @@ function createMainBlock(input: any, encodeFn: any): string {
   return encodeFn(input);
 }
 
-export function encode(input: any, encodingMode: number = MODE_DEFAULT): string {
+export function encode(input: any, encodingModeOrContext?: any, context?: any): string {
   assert(input);
   
-  const { pool, refMap } = buildTokenPool(input, encodingMode);
+  let mode = MODE_DEFAULT;
+  let ctx: any;
+  if (typeof encodingModeOrContext === "number") {
+    mode = encodingModeOrContext;
+    ctx = context;
+  } else if (encodingModeOrContext && typeof encodingModeOrContext === "object") {
+    ctx = encodingModeOrContext;
+  }
+  
+  const { pool, refMap } = buildValuePool(input, mode);
   
   const customEscape = (text: string, isKey: boolean = false): string => {
     const source = String(text ?? "");
-    if (isKey && (encodingMode & ENC_INTERN_ALL) === 0) {
-      return escape(source);
+    if (isKey && (mode & ENC_INTERN_ALL) === 0) {
+      return escape(source, ctx);
     }
     if (refMap.has(source)) {
       return refMap.get(source)!;
     }
-    return escape(source);
+    return escape(source, ctx);
   };
 
   const blocks: any[] = [];
-  const baseMode = encodingMode & (ENC_VALUES | ENC_INTERN_ALL);
-  const encodeFn = (encoders[baseMode] || encoders[MODE_DEFAULT])(blocks, customEscape, encodingMode);
+  const baseMode = mode & (ENC_VALUES | ENC_INTERN_ALL);
+  const encoderCreator = encoders[baseMode] || encoders[MODE_DEFAULT];
+  const encodeFn = encoderCreator(blocks, customEscape, mode);
+  (encodeFn as any).context = ctx;
 
   const mainBlock = createMainBlock(input, encodeFn);
-  
-  const poolStr = pool.length > 0 ? VALUE_MARKER + pool.join(VALUE_MARKER) : "";
-  return poolStr + blocks.join("") + mainBlock;
+
+  const poolStr = pool.length > 0 ? MARKERS.VALUE_MARKER + pool.join(MARKERS.VALUE_MARKER) : "";
+  return poolStr + mainBlock + blocks.join("");
 }

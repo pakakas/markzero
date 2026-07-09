@@ -25,14 +25,13 @@ test("Git Log --name-only Use Case (Nested 1D Arrays)", () => {
   ];
 
   // Encode the data
-  // Expected behavior: 'files' property will be encoded as a 1D Set and recovered as a clean array of strings
   const encoded = encode(gitLogData);
   console.log("\nEncoded Git Log MarkZero:");
   console.log(encoded);
 
   // Decode the data
   const decodedBlocks = decode(encoded);
-  const commits = decodedBlocks[decodedBlocks.length - 1]; // Main block is the last block of the decoded results
+  const commits = decodedBlocks[0]; // Main block is the first block of the decoded results
 
   // Validation
   expect(commits.length).toBe(2);

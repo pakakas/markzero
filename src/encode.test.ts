@@ -1,6 +1,6 @@
 import { expect, test, describe } from "bun:test";
 import { encode, decode, ENC_GRID_DEDUPLICATE } from "./index";
-import { GRID_MARKER, ROW_MARKER, KV_RELATION, GRID_REF, COL_MARKER, ROW_SEP } from "./util";
+import { MARKERS } from "./util";
 
 describe("MarkZero Encoder (Default Mode)", () => {
   test("throws TypeError for primitive, empty, or irrelevant inputs", () => {
@@ -20,22 +20,22 @@ describe("MarkZero Encoder (Default Mode)", () => {
   test("encodes an array (Set)", () => {
     const input = ["a", "b", "c"];
     const result = encode(input);
-    // GRID_MARKER + a + ROW_MARKER + b + ROW_MARKER + c
-    expect(result).toBe(GRID_MARKER + "a" + ROW_MARKER + "b" + ROW_MARKER + "c");
+    // Anonymous set: first row ROW_MARKER is optional.
+    expect(result).toBe(MARKERS.GRID_MARKER + "a" + MARKERS.ROW_MARKER + "b" + MARKERS.ROW_MARKER + "c");
   });
 
   test("encodes an object (Map)", () => {
     const input = { key: "value" };
     const result = encode(input);
     // GRID_MARKER + ROW_MARKER + key + KV_RELATION + value
-    expect(result).toBe(GRID_MARKER + ROW_MARKER + "key" + KV_RELATION + "value");
+    expect(result).toBe(MARKERS.GRID_MARKER + MARKERS.ROW_MARKER + "key" + MARKERS.KV_RELATION + "value");
   });
 
   test("encodes grid references (※0) without escaping at the top-level", () => {
-    const input = { ref: GRID_REF + "0" };
+    const input = { ref: MARKERS.GRID_REF + "0" };
     const result = encode(input);
     // Should preserve GRID_REF + 0 as is (no escape) because of the grid ref bypass
-    expect(result).toBe(GRID_MARKER + ROW_MARKER + "ref" + KV_RELATION + GRID_REF + "0");
+    expect(result).toBe(MARKERS.GRID_MARKER + MARKERS.ROW_MARKER + "ref" + MARKERS.KV_RELATION + MARKERS.GRID_REF + "0");
   });
 
 
@@ -50,12 +50,11 @@ describe("MarkZero Encoder (Default Mode)", () => {
     };
     const result = encode(input);
     // Should flatten into 2 grids: 
-    // Grid 0 (addresses): ⓖʀline1→jl bandungʀline2→jl riauⓩ
-    // Grid 1 (outer object): ⓖʀname→hyuʀaddresses→※0ⓩ
+    // Grid 0 (outer object): GRID_MARKER ROW_MARKER name KV_RELATION hyu ROW_MARKER addresses KV_RELATION GRID_REF 1
+    // Grid 1 (addresses): GRID_MARKER ROW_MARKER line1 KV_RELATION jl bandung ROW_MARKER line2 KV_RELATION jl riau
     const expected = 
-      
-      GRID_MARKER + ROW_MARKER + "line1" + KV_RELATION + "jl bandung" + ROW_MARKER + "line2" + KV_RELATION + "jl riau" +
-      GRID_MARKER + ROW_MARKER + "name" + KV_RELATION + "hyu" + ROW_MARKER + "addresses" + KV_RELATION + GRID_REF + "0";
+      MARKERS.GRID_MARKER + MARKERS.ROW_MARKER + "name" + MARKERS.KV_RELATION + "hyu" + MARKERS.ROW_MARKER + "addresses" + MARKERS.KV_RELATION + MARKERS.GRID_REF + "1" +
+      MARKERS.GRID_MARKER + MARKERS.ROW_MARKER + "line1" + MARKERS.KV_RELATION + "jl bandung" + MARKERS.ROW_MARKER + "line2" + MARKERS.KV_RELATION + "jl riau";
     
     expect(result).toBe(expected);
   });
@@ -71,15 +70,14 @@ describe("MarkZero Encoder (Default Mode)", () => {
       }
     };
     const result = encode(input);
-    // Should flatten into 3 grids in post-order or bottom-up traversal:
-    // Grid 0 (deepest cause): ⓖʀcode→502ⓩ
-    // Grid 1 (middle cause): ⓖʀcode→501ʀcause→※0ⓩ
-    // Grid 2 (main object): ⓖʀcode→500ʀcause→※1ⓩ
+    // Should flatten into 3 grids:
+    // Grid 0 (main object): GRID_MARKER ROW_MARKER code KV_RELATION 500 ROW_MARKER cause KV_RELATION GRID_REF 2
+    // Grid 1 (deepest cause): GRID_MARKER ROW_MARKER code KV_RELATION 502
+    // Grid 2 (middle cause): GRID_MARKER ROW_MARKER code KV_RELATION 501 ROW_MARKER cause KV_RELATION GRID_REF 1
     const expected =
-       +
-      GRID_MARKER + ROW_MARKER + "code" + KV_RELATION + "502" +
-      GRID_MARKER + ROW_MARKER + "code" + KV_RELATION + "501" + ROW_MARKER + "cause" + KV_RELATION + GRID_REF + "0" +
-      GRID_MARKER + ROW_MARKER + "code" + KV_RELATION + "500" + ROW_MARKER + "cause" + KV_RELATION + GRID_REF + "1";
+      MARKERS.GRID_MARKER + MARKERS.ROW_MARKER + "code" + MARKERS.KV_RELATION + "500" + MARKERS.ROW_MARKER + "cause" + MARKERS.KV_RELATION + MARKERS.GRID_REF + "2" +
+      MARKERS.GRID_MARKER + MARKERS.ROW_MARKER + "code" + MARKERS.KV_RELATION + "502" +
+      MARKERS.GRID_MARKER + MARKERS.ROW_MARKER + "code" + MARKERS.KV_RELATION + "501" + MARKERS.ROW_MARKER + "cause" + MARKERS.KV_RELATION + MARKERS.GRID_REF + "1";
     
     expect(result).toBe(expected);
   });
@@ -130,30 +128,29 @@ describe("MarkZero Encoder (Default Mode)", () => {
     
     // Verify the correct flattened multi-grid representation is produced
     const expected =
-       +
-      // Grid 0 (stack trace of outer error)
-      GRID_MARKER + COL_MARKER + "at" + ROW_SEP + "file" + ROW_SEP + "line" + 
-      ROW_MARKER + "fetchUserProfile" + ROW_SEP + "/app/src/api.ts" + ROW_SEP + "120:5" +
-      ROW_MARKER + "loadData" + ROW_SEP + "/app/src/main.ts" + ROW_SEP + "45:10" +
-      // Grid 1 (stack trace of middle cause)
-      GRID_MARKER + COL_MARKER + "at" + ROW_SEP + "file" + ROW_SEP + "line" + 
-      ROW_MARKER + "Socket.onTimeout" + ROW_SEP + "node:net" + ROW_SEP + "950:12" +
-      ROW_MARKER + "process.processTicksAndRejections" + ROW_SEP + "node:internal/process/task_queues" + ROW_SEP + "95:5" +
-      // Grid 2 (stack trace of deepest cause)
-      GRID_MARKER + COL_MARKER + "at" + ROW_SEP + "file" + ROW_SEP + "line" + 
-      ROW_MARKER + "TCP.onStreamRead" + ROW_SEP + "node:internal/stream_base_commons" + ROW_SEP + "190:23" +
-      // Grid 3 (deepest cause object)
-      GRID_MARKER + ROW_MARKER + "error" + KV_RELATION + "ECONNREFUSED 127.0.0.1:5432" + ROW_MARKER + "stack" + KV_RELATION + GRID_REF + "2" +
-      // Grid 4 (middle cause object)
-      GRID_MARKER + ROW_MARKER + "error" + KV_RELATION + "Connection timeout" + ROW_MARKER + "stack" + KV_RELATION + GRID_REF + "1" + ROW_MARKER + "cause" + KV_RELATION + GRID_REF + "3" +
-      // Grid 5 (main outer error object)
-      GRID_MARKER + ROW_MARKER + "error" + KV_RELATION + "Failed to fetch user profile" + ROW_MARKER + "stack" + KV_RELATION + GRID_REF + "0" + ROW_MARKER + "cause" + KV_RELATION + GRID_REF + "4";
+      // Grid 0 (main outer error object)
+      MARKERS.GRID_MARKER + MARKERS.ROW_MARKER + "error" + MARKERS.KV_RELATION + "Failed to fetch user profile" + MARKERS.ROW_MARKER + "stack" + MARKERS.KV_RELATION + MARKERS.GRID_REF + "1" + MARKERS.ROW_MARKER + "cause" + MARKERS.KV_RELATION + MARKERS.GRID_REF + "5" +
+      // Grid 1 (stack trace of outer error)
+      MARKERS.GRID_MARKER + MARKERS.COL_MARKER + "at" + MARKERS.ROW_SEP + "file" + MARKERS.ROW_SEP + "line" + 
+      MARKERS.ROW_MARKER + "fetchUserProfile" + MARKERS.ROW_SEP + "/app/src/api.ts" + MARKERS.ROW_SEP + "120:5" +
+      MARKERS.ROW_MARKER + "loadData" + MARKERS.ROW_SEP + "/app/src/main.ts" + MARKERS.ROW_SEP + "45:10" +
+      // Grid 2 (stack trace of middle cause)
+      MARKERS.GRID_MARKER + MARKERS.COL_MARKER + "at" + MARKERS.ROW_SEP + "file" + MARKERS.ROW_SEP + "line" + 
+      MARKERS.ROW_MARKER + "Socket.onTimeout" + MARKERS.ROW_SEP + "node:net" + MARKERS.ROW_SEP + "950:12" +
+      MARKERS.ROW_MARKER + "process.processTicksAndRejections" + MARKERS.ROW_SEP + "node:internal/process/task_queues" + MARKERS.ROW_SEP + "95:5" +
+      // Grid 3 (stack trace of deepest cause)
+      MARKERS.GRID_MARKER + MARKERS.COL_MARKER + "at" + MARKERS.ROW_SEP + "file" + MARKERS.ROW_SEP + "line" + 
+      MARKERS.ROW_MARKER + "TCP.onStreamRead" + MARKERS.ROW_SEP + "node:internal/stream_base_commons" + MARKERS.ROW_SEP + "190:23" +
+      // Grid 4 (deepest cause object)
+      MARKERS.GRID_MARKER + MARKERS.ROW_MARKER + "error" + MARKERS.KV_RELATION + "ECONNREFUSED 127.0.0.1:5432" + MARKERS.ROW_MARKER + "stack" + MARKERS.KV_RELATION + MARKERS.GRID_REF + "3" +
+      // Grid 5 (middle cause object)
+      MARKERS.GRID_MARKER + MARKERS.ROW_MARKER + "error" + MARKERS.KV_RELATION + "Connection timeout" + MARKERS.ROW_MARKER + "stack" + MARKERS.KV_RELATION + MARKERS.GRID_REF + "2" + MARKERS.ROW_MARKER + "cause" + MARKERS.KV_RELATION + MARKERS.GRID_REF + "4";
 
     expect(encoded).toBe(expected);
 
     // Verify it decodes back perfectly
     const decoded = decode(encoded);
-    const mainDecoded = decoded[decoded.length - 1];
+    const mainDecoded = decoded[decoded.length - 6];
     expect(mainDecoded.error).toBe("Failed to fetch user profile");
     expect(Array.isArray(mainDecoded.stack)).toBe(true);
     expect(mainDecoded.stack[0].at).toBe("fetchUserProfile");
@@ -178,21 +175,42 @@ describe("MarkZero Encoder (Default Mode)", () => {
     };
     const encoded = encode(input, ENC_GRID_DEDUPLICATE);
     
-    // Grid 0 (deduplicated role map): ⓖʀrole→adminʀlevel→5ⓩ
-    // Grid 1 (main outer object): ⓖʀalice→※0ʀbob→※0ⓩ
+    // Grid 0 (main outer object): GRID_MARKER ROW_MARKER alice KV_RELATION GRID_REF 1 ROW_MARKER bob KV_RELATION GRID_REF 1
+    // Grid 1 (deduplicated role map): GRID_MARKER ROW_MARKER role KV_RELATION admin ROW_MARKER level KV_RELATION 5
     const expected =
-       +
-      GRID_MARKER + ROW_MARKER + "role" + KV_RELATION + "admin" + ROW_MARKER + "level" + KV_RELATION + "5" +
-      GRID_MARKER + ROW_MARKER + "alice" + KV_RELATION + GRID_REF + "0" + ROW_MARKER + "bob" + KV_RELATION + GRID_REF + "0";
+      MARKERS.GRID_MARKER + MARKERS.ROW_MARKER + "alice" + MARKERS.KV_RELATION + MARKERS.GRID_REF + "1" + MARKERS.ROW_MARKER + "bob" + MARKERS.KV_RELATION + MARKERS.GRID_REF + "1" +
+      MARKERS.GRID_MARKER + MARKERS.ROW_MARKER + "role" + MARKERS.KV_RELATION + "admin" + MARKERS.ROW_MARKER + "level" + MARKERS.KV_RELATION + "5";
       
     expect(encoded).toBe(expected);
     
     // Verify it decodes back perfectly to independent matching structures
     const decoded = decode(encoded);
-    const mainDecoded = decoded[decoded.length - 1];
+    const mainDecoded = decoded[decoded.length - 2];
     expect(mainDecoded.alice.role).toBe("admin");
     expect(mainDecoded.alice.level).toBe("5");
     expect(mainDecoded.bob.role).toBe("admin");
     expect(mainDecoded.bob.level).toBe("5");
+  });
+
+  test("resolves valid nested grid references (GRID_REF 1) and resolves invalid/out-of-bounds references to null", () => {
+    // 1. Valid nesting (GRID_REF 1 resolves to the nested object) & Negative test for GRID_REF 2 (out of bounds)
+    const payloadValid = "░→name≡hyu→info≡※1→missing2≡※2░→role≡admin";
+    const decodedValid = decode(payloadValid);
+    const rootValid = decodedValid[0];
+    expect(rootValid.name).toBe("hyu");
+    expect(rootValid.info.role).toBe("admin");
+    expect(rootValid.missing2).toBeNull(); // GRID_REF 2 is out of bounds, should resolve to null
+
+    // 2. GRID_REF 0 reference (parent grid reference) resolves to null (biar hemat)
+    const payloadParentRef = "░→self≡※0";
+    const decodedParentRef = decode(payloadParentRef);
+    const rootParentRef = decodedParentRef[0];
+    expect(rootParentRef.self).toBeNull();
+
+    // 3. Out-of-bounds reference (GRID_REF 99) resolves to null
+    const payloadOutOfBounds = "░→missing≡※99";
+    const decodedOutOfBounds = decode(payloadOutOfBounds);
+    const rootOutOfBounds = decodedOutOfBounds[0];
+    expect(rootOutOfBounds.missing).toBeNull();
   });
 });

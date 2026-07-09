@@ -1,25 +1,28 @@
 import { expect, test, describe } from "bun:test";
 import { decode } from "./decode";
-import { GRID_MARKER, ROW_MARKER, CLOSE_MARKER } from "./util";
+import { MARKERS } from "./util";
 
 describe("MarkZero Decoder - Mixed Content & EOF Boundaries", () => {
-  test("decodes Data MarkZero successfully when mixed with surrounding human text and closed by ⓩ", () => {
+  test("decodes Data MarkZero successfully when mixed with surrounding human text and closed by О", () => {
     const mixedWithClose = `Ini teks awalan manusia.
-${GRID_MARKER}a${ROW_MARKER}b${CLOSE_MARKER}
+${MARKERS.GRID_MARKER}${MARKERS.ROW_MARKER}a${MARKERS.ROW_MARKER}b${MARKERS.MZ_ENVELOPE_END}
 Dan ini adalah teks basa-basi setelah data MarkZero.`;
 
     const result = decode(mixedWithClose);
-    expect(result).toEqual([["a", "b"]]);
+    // Pool captures the prefix text before the grid marker
+    expect(result[result.length - 1]).toEqual(["a", "b"]);
   });
 
-  test("decodes pure Data MarkZero properly without ⓩ (relying on EOF)", () => {
-    const pureMarkZero = `${GRID_MARKER}a${ROW_MARKER}b`;
+  // akan dibuang
+  test("decodes pure Data MarkZero properly without О (relying on EOF)", () => {
+    const pureMarkZero = `${MARKERS.GRID_MARKER}${MARKERS.ROW_MARKER}a${MARKERS.ROW_MARKER}b`;
     const result = decode(pureMarkZero);
     expect(result).toEqual([["a", "b"]]);
   });
 
-  test("decodes multi-grid Data MarkZero without ⓩ (relying on ⓖ and EOF boundaries)", () => {
-    const multiGrid = `${GRID_MARKER}a${ROW_MARKER}b${GRID_MARKER}c${ROW_MARKER}d`;
+  // akan dibuang
+  test("decodes multi-grid Data MarkZero without О (relying on ░ and EOF boundaries)", () => {
+    const multiGrid = `${MARKERS.GRID_MARKER}${MARKERS.ROW_MARKER}a${MARKERS.ROW_MARKER}b${MARKERS.GRID_MARKER}${MARKERS.ROW_MARKER}c${MARKERS.ROW_MARKER}d`;
     const result = decode(multiGrid);
     expect(result).toEqual([["a", "b"], ["c", "d"]]);
   });

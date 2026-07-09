@@ -1,6 +1,6 @@
 import { test, expect } from "bun:test";
 import { encode, ENC_VALUES, ENC_INTERN_ALL } from "../src/index";
-import { GRID_MARKER, VALUE_REF, VALUE_MARKER, ROW_MARKER } from "../src/util";
+import { MARKERS } from "../src/util";
 
 const data = [
     { name: "item1", type: "regular-file-record", "app-config-spec": "active" }, 
@@ -25,7 +25,7 @@ test("Always Literal Mode (Default)", () => {
   const result = encode(unifiedInput);
   // Should NOT have a pool part after first block start
   // In MarkZero (pure notation), it starts directly with the block marker
-  expect(result.startsWith()).toBe(true);
+  expect(result.startsWith(MARKERS.GRID_MARKER)).toBe(true);
   expect(result).toContain("regular-file-record");
   console.log("Literal Mode Verified");
 });
@@ -33,15 +33,15 @@ test("Always Literal Mode (Default)", () => {
 test("ENC_VALUES Mode (Pool Values Only)", () => {
   const result = encode(unifiedInput, ENC_VALUES);
   // Should have "regular-file-record" in pool (prefixed by VALUE_MARKER)
-  expect(result).toContain(`${VALUE_MARKER}regular-file-record`);
-  expect(result).toContain(`${VALUE_MARKER}app-config-spec`);
+  expect(result).toContain(`${MARKERS.VALUE_MARKER}regular-file-record`);
+  expect(result).toContain(`${MARKERS.VALUE_MARKER}app-config-spec`);
   console.log("ENC_VALUES Mode Verified (Smart Token Interning)");
 });
 
 test("ENC_INTERN_ALL Mode (Pool Everything)", () => {
   const result = encode(unifiedInput, ENC_INTERN_ALL);
   // Both keys and values should be interned if profitable
-  expect(result).toContain(`${VALUE_MARKER}regular-file-record`);
-  expect(result).toContain(`${GRID_MARKER}${ROW_MARKER}${VALUE_REF}`); // Keys should be pointers
+  expect(result).toContain(`${MARKERS.VALUE_MARKER}regular-file-record`);
+  expect(result).toContain(`${MARKERS.GRID_MARKER}${MARKERS.ROW_MARKER}${MARKERS.VALUE_REF}`); // Keys should be pointers
   console.log("ENC_INTERN_ALL Mode Verified");
 });

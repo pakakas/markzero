@@ -1,68 +1,103 @@
-# Spesifikasi MarkZero (v1)
+# Spesifikasi ADN (v1)
 
-> **"Markup is for Screens. Markdown is for Docs. MarkZero is for Intelligence."**
+> **"Markup is for Screens. Markdown is for Docs. ADN is for Intelligence."**
 
 ## Ringkasan
-**MarkZero** adalah format serialisasi AI-native yang sangat efisien yang dirancang khusus untuk Large Language Models. Format ini merepresentasikan data dalam ruang laten multi-dimensi, yang dioptimalkan untuk atensi AI ketimbang hierarki visual manusia.
+**ADN (Agent Data Notation)** adalah format serialisasi AI-native yang sangat efisien yang dirancang untuk Large Language Models. Format ini merepresentasikan data dalam ruang laten multi-dimensi, yang dioptimalkan untuk atensi AI ketimbang hierarki visual manusia.
 
 ### Klasifikasi Representasi: Human IR vs. Agent IR
-Melalui serangkaian diskusi dan perumusan filosofis, sistem representasi logika pemrograman dan notasi data dikelompokkan ke dalam dua kategori utama berdasarkan bagaimana batasan struktural didefinisikan:
+Melalui desain kolaboratif dan penyempurnaan filosofis, sistem representasi logika pemrograman dan notasi data diklasifikasikan ke dalam dua kategori utama berdasarkan bagaimana batasan struktural didefinisikan:
 
 1. **Human IR (Human Intermediate Representation / Interface Representation)**:
-   - **Karakteristik Utama**: Mengandalkan **visual block delimiters** (seperti kurung kurawal `{ }`, kurung siku `[ ]`, koma, indentasi, dan kutipan bersarang) untuk menyusun hierarki data.
+   - **Karakteristik Utama**: Mengandalkan **visual block delimiters** (seperti kurung kurawal, kurung siku, koma, indentasi, dan kutipan bersarang) untuk menyusun hierarki data.
    - **Tujuan**: Dioptimalkan agar mata manusia dapat mengenali batasan (*scope*) dan kedalaman bersarang (*nesting*) secara visual.
-   - **Batas AI-Native**: Meskipun format ramah-AI seperti *Zerolang* menggunakan kata-kata manusia (yang sebenarnya sangat *native* bagi LLM), penulisannya masih terikat pada paradigma **Human IR** karena masih mengandalkan struktur blok visual (`{ }`) ala JSON.
+   - **Batas AI-Native**: Meskipun format ramah-AI menggunakan kata-kata manusia (yang sebenarnya sangat *native* bagi LLM), penulisannya masih terikat pada paradigma **Human IR** karena masih mengandalkan visual block delimiters.
    - **Kelemahan bagi AI**: Memaksa AI melakukan parsing pada kurung penutup yang bersarang, memicu overhead token yang besar pada sintaksis visual buatan, serta rawan terhadap kegagalan penafsiran hierarki yang mendalam.
 
 2. **Agent IR (Agent Intermediate Representation / Interface Representation)**:
-   - **Karakteristik Utama**: Membuang seluruh batas visual berpasangan (`{ }`) dan menggantinya dengan sistem **perataan relasional datar (flat relational referencing)** menggunakan penanda struktural 1-token (seperti `ⓟ` / `ⓜ`, `·`, `¤`, `ⓖ`, `※`).
+   - **Karakteristik Utama**: Membuang seluruh batas visual berpasangan dan menggantinya dengan sistem **perataan relasional datar (flat relational referencing)** menggunakan penanda struktural 1-token (seperti `·`, `¤`, `§`, `※`).
    - **Tujuan**: Mengizinkan kata-kata manusia (yang merupakan bahasa asli LLM) mengalir bebas tanpa sekat visual buatan. Struktur data diratakan secara non-linier dan langsung dipetakan ke dalam ruang atensi serta latent space AI secara ekstrem dan hemat token.
-   - **MZHAO sebagai Agent IR Sejati**: Protokol **MZHAO** (ditandai dengan trigger `ⓟ`) dirancang murni sebagai Agent IR. Ia mentransmisikan data bantuan (*help messages*) dan instruksi dari alat bantu CLI ke AI Agent dalam bentuk grid datar dan referensi, menghilangkan kurung visual murni dan hanya menyajikan visualisasi tabel kemanusiaan (ASCII) ketika dipanggil secara eksplisit oleh manusia menggunakan bendera `--ascii`.
 
-| Kategori (IR) | Batasan Struktural | Tingkat Antarmuka | Jenis Notasi | Target Penerima |
-| :--- | :--- | :--- | :--- | :--- |
-| **Human IR** | Blok Visual (`{ }`, `[ ]`, koma) | **User Interface (UI)** | **Mark-UP** | Mata Manusia |
-| **Human IR** | Teks Linier & Blok Visual | **Developer Interface (DX)** | **Mark-DOWN** / *Zerolang* | Logika Manusia |
-| **Agent IR** | Referensi Relasional Datar (`※`, `¤`) | **Agent Interface (AX)** | **MarkZero / MZHAO** | **Atensi AI (Latent)** |
+| Kategori (IR) | Batasan Struktural | Tingkat Antarmuka | Target Penerima |
+| :--- | :--- | :--- | :--- |
+| **Human IR** | Blok Visual (kurung, koma) | **User Interface (UI)** | Mata Manusia |
+| **Human IR** | Teks Linier & Blok Visual | **Developer Interface (DX)** | Logika Manusia |
+| **Agent IR** | Referensi Relasional Datar (`≡`, `※`, `¤`) + Penanda Struktural (`░`, `§`, `→`, `¦`) | **Agent Interface (AX)** | **Atensi AI (Latent)** |
 
 ## 1. Penanda Struktural (Structural Markers)
 
 | Peran | Karakter | Nama Unicode | Deskripsi |
 | :--- | :---: | :--- | :--- |
-| **Value Marker** | `·` | U+00B7 (MIDDLE DOT) | Portal untuk mendefinisikan string ter-intern di dalam Token Pool. |
-| **Grid Marker** | `ⓖ` | U+24D6 (CIRCLED LATIN SMALL LETTER G) | Menandai awal dari sebuah Grid block. |
-| **Column Marker** | `ᴄ` | U+1D04 (LATIN LETTER SMALL CAPITAL C) | Menandai bagian tajuk/kolom di dalam sebuah Grid. |
-| **Row Marker** | `ʀ` | U+0280 (LATIN LETTER SMALL CAPITAL R) | Menandai awal dari sebuah item Set, properti Map, atau baris Grid. |
-| **Row Separator** | `¦` | U+00A6 (BROKEN BAR) | Memisahkan sel data di dalam satu baris Grid. Trailing `¦` untuk sel terakhir yang kosong boleh dihilangkan — decoder mengisi sel yang hilang dengan `""`. |
-| **Relation Binder** | `→` | U+2192 (RIGHTWARDS ARROW) | Mengikat kunci (*key*) ke nilai (*value*) pada properti Map. |
-| **Value Ref** | `¤` | U+00A4 (CURRENCY SIGN) | Portal ke sebuah string ter-intern di dalam Token Pool (berdasarkan Indeks). |
+| **Value Marker** | `·` | U+00B7 (MIDDLE DOT) | Portal untuk mendefinisikan string ter-intern di dalam intern pool. |
+| **Grid Marker** | `░` | U+2591 (LIGHT SHADE) | Menandai awal dari sebuah Grid block. |
+| **Column Marker** | `§` | U+00A7 (SECTION SIGN) | Menandai bagian tajuk/kolom di dalam sebuah Grid. |
+| **Title Marker** | `†` | U+2020 (DAGGER) | Menandai sebuah judul. |
+| **Row Marker** | `→` | U+2192 (RIGHTWARDS ARROW) | Menandai awal dari sebuah item Set, properti Map, atau baris Grid. |
+| **Row Separator** | `¦` | U+00A6 (BROKEN BAR) | Memisahkan sel data di dalam satu baris Grid. |
+| **Relation Binder** | `≡` | U+2261 (IDENTICAL TO) | Mengikat kunci (*key*) ke nilai (*value*) pada properti Map. |
+| **Value Ref** | `¤` | U+00A4 (CURRENCY SIGN) | Portal ke sebuah string ter-intern di dalam intern pool (berdasarkan Indeks). |
 | **Grid Ref** | `※` | U+203B (REFERENCE MARK) | Portal ke blok data yang telah didefinisikan sebelumnya (berdasarkan Indeks). |
-| **Escaper** | `ɛ` | U+025B (LATIN SMALL LETTER OPEN E) | Digunakan untuk meng-escape penanda struktural di dalam konten literal. |
+| **True** | `◆` | U+25C6 (BLACK DIAMOND) | Nilai boolean true. |
+| **False** | `◇` | U+25C7 (WHITE DIAMOND) | Nilai boolean false. |
+| **Null** | `○` | U+25CB (WHITE CIRCLE) | Nilai null / kosong. |
 
 ---
 
 ## 2. Mekanika Notasi
-MarkZero dilengkapi fitur-fitur mutakhir yang dirancang untuk efisiensi data ekstrem serta konektivitas non-linear:
+ADN dilengkapi fitur-fitur mutakhir yang dirancang untuk efisiensi data ekstrem serta konektivitas non-linear:
 - **List / Set**: Grid anonim dengan 1 kolom.
-- **Meta / Map**: Grid anonim dengan 2 kolom yang diikat menggunakan Relation Binder `→`.
-- **Value Referencing (`¤`)**: Penunjuk referensi ke Token Pool terpusat untuk menghindari duplikasi string.
-- **Grid Referencing (`※`)**: Penunjuk referensi ke blok data yang sudah didefinisikan sebelumnya untuk memfasilitasi penggunaan ulang struktur data. Referensi yang tidak dapat diselesaikan (*unresolvable*) akan mengembalikan nilai `null`.
-- **Interning**: Proses memindahkan string literal berulang ke dalam Token Pool terpusat guna menghemat token.
-- **Escaping**: Mekanisme andal untuk menangani penanda struktural yang ditemukan sebagai bagian dari teks literal asli.
+- **Meta / Map**: Grid anonim dengan 2 kolom yang diikat menggunakan Relation Binder `≡`.
+- **Value Referencing (`¤`)**: Penunjuk referensi ke intern pool terpusat untuk menghindari duplikasi string.
+- **Grid Referencing (`※`)**: Penunjuk referensi ke blok data yang sudah didefinisikan sebelumnya untuk memfasilitasi penggunaan ulang struktur data.
+- **Interning**: Proses memindahkan string literal berulang ke dalam intern pool terpusat guna menghemat token.
 
 ### 2.1 Payload & Aturan Struktural
-- **Pure ADN**: Payload ADN tidak memiliki batasan seperti bracket atau marker envelope. Payload dimulai secara natural dengan Token Pool (`❖`) atau Grid (`ⓖ`).
-- **Token Pool**: Diperlukan di awal payload jika data mengandung Value Reference (`¤`). Jika tidak ada Value Reference, pool tidak disertakan.
-- **Optional Payload Blocks**: Blok data payload (seperti Grid/Set) bersifat sepenuhnya **opsional**. Payload yang valid dapat hanya terdiri dari Token Pool saja, tanpa blok data tambahan di belakangnya.
-- **Multi-Grid Capability**: Satu payload MarkZero dapat memuat **beberapa** blok Grid (`ⓖ`), masing-masing dengan judul opsional yang disematkan antara `ⓖ` dan `ᴄ`, memungkinkan penyusunan data kompleks yang terdiri dari berbagai set/grid berbeda dalam satu aliran data tunggal.
-- **Auto Grid Indexing**: Setiap blok Grid (`ⓖ`) yang diproses di dalam payload akan secara otomatis diberikan indeks urutan bertahap mulai dari `0`. Indeks urutan otomatis ini digunakan oleh Grid Referencing (`※`) untuk mereferensikan kembali blok data sebelumnya (contohnya `※0`, `※1`).
-- **Empty Collections**: Map kosong `{}` dan List/Set kosong `[]` secara konsisten diserialisasikan menjadi bentuk struktural paling minimal: `ⓖ` (Grid Start).
-- **Penghilangan Separator Trailing**: Encoder BOLEH menghilangkan `¦` trailing ketika sel-sel terakhir di akhir baris kosong. Decoder WAJIB memperlakukan sel trailing yang hilang sebagai string kosong (`""`). Ini menghemat satu token per sel yang dihilangkan.
-- **Unresolvable Referencing**: Grid referencing yang tidak terpetakan atau yang mengandung referensi diri (*self-reference*) atau ketergantungan melingkar (*circular dependency*) (contoh: `※0` yang mereferensikan indeks grid `0` sewaktu mendekode dirinya sendiri) akan diselesaikan menjadi `null` demi mencegah rekursi tak terbatas.
+- **Pure ADN**: Payload ADN tidak memiliki batasan seperti bracket atau marker envelope. Payload terdiri dari intern pool opsional yang diikuti satu atau lebih blok data.
+- **Intern Pool**: Intern pool adalah blok string yang diawali `·`. Bersifat opsional — hanya ada jika data mengandung Value Reference (`¤`).
 
-### 2.2 Penanda Escaper (`ɛ`)
-Guna menjamin tidak terjadinya tabrakan data (*collision*) bahkan ketika membahas format notasi ini sendiri, setiap penanda struktural yang ditemukan di dalam teks literal wajib di-escape dengan didahului oleh penanda **Escaper (`ɛ`)**:
-*   **Karakter Penanda Literal**: Untuk menyertakan karakter struktural (seperti `¦`, `ⓖ`, `ᴄ`, atau `ʀ`) sebagai teks literal biasa, tambahkan awalan: `ɛ¦`, `ɛⓖ`, `ɛᴄ`, `ɛʀ`.
-*   **Escaper Literal**: Untuk menyertakan karakter `ɛ` sebagai teks literal biasa, karakter tersebut harus ditulis ganda: `ɛɛ`.
+### 2.2 Grid
+- **Kebutuhan Grid**: Payload ADN yang valid harus mengandung setidaknya satu grid (`░`).
+- **Multi-Grid Capability**: Satu payload ADN dapat memuat **beberapa** blok Grid (`░`), memungkinkan penyusunan data kompleks yang terdiri dari berbagai set/grid berbeda.
+- **Judul Terikat (*Bound Title*)**: Grid BOLEH membawa judul terikat secara inline di antara `░` dan `§`. Judul terikat adalah **satu** label. Jika tajuk kolom (`§`) ada, penanda `†` bersifat implisit di posisi judul (contoh: `░User§name¦role`). Jika judul terikat ada TANPA tajuk kolom, penanda `†` **WAJIB** digunakan untuk membedakan judul dari nilai (contoh: `░†User→hyuze¦admin`).
+- **Grid Anonim (*Anonymous Grid*)**: Grid tanpa judul terikat maupun tajuk kolom disebut grid anonim (contoh: `░hyuze¦admin→alice¦dev`). Pada grid anonim, Row Marker (`→`) pada baris **pertama** bersifat **OPSIONAL**. Grid anonim umumnya merepresentasikan daftar atau himpunan homogen di mana bentuk baris dipahami dari konteks. Seluruh baris berikutnya tetap membutuhkan Row Marker.
+- **Auto Grid Indexing**: Setiap blok Grid (`░`) di dalam payload diberikan indeks urutan mulai dari `0` secara atas-bawah (top-down / parent-first). Grid 0 adalah grid induk terluar (root). Karena indeks 0 merupakan grid induk itu sendiri, penunjuk referensi grid (`※`) untuk struktur bersarang (nested) selalu dimulai dari `※1`.
+- **Empty Collections**: Set kosong adalah `░`. Map kosong adalah `░≡`.
+- **Nilai Skalar**: Nilai skalar (`◆`, `◇`, `○`) adalah nilai sel di dalam baris Grid. Tidak muncul di luar Grid.
+- **Penghilangan Separator Trailing**: Separator `¦` trailing BOLEH tidak ada ketika sel-sel terakhir di akhir baris kosong. Sel trailing yang hilang diperlakukan sebagai string kosong.
+- **Unresolvable Referencing**: Referensi grid atau value tidak dapat diselesaikan ketika indeks di luar jangkauan atau membentuk dependensi melingkar. Referensi yang tidak dapat diselesaikan menghasilkan `null`.
 
-*Spesifikasi Resmi MarkZero - Senin, 25 Mei 2026*
+
+
+---
+
+## 3. Analisis Biaya Token
+
+Semua penanda struktural dioptimalkan untuk biaya **1 token** pada model target utama (OpenAI, Claude, Grok/xAI). Beberapa model Cina (GLM, Qwen, Hy3, Kimi, Nex) mungkin menokenisasi beberapa penanda dengan +2 karena perbedaan data pelatihan tokenizer; kami terus berusaha mencapai biaya +1 universal di semua model.
+
+### 3.1 Matriks Biaya Penanda
+
+| Char | Peran | MiMo | DeepSeek | Grok | GLM-5.1 | Qwen3.6 | Hy3 | Kimi-K2.6 | Nex-N2 |
+| :---: | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| `·` | Value | +1 | +1 | +1 | +1 | +1 | +1 | +1 | +1 |
+| `░` | Grid | +1 | +1 | +1 | +1 | +1 | +2 | +1 | +1 |
+| `§` | Kolom | +1 | +1 | +1 | +1 | +1 | +1 | +1 | +1 |
+| `†` | Judul | +1 | +1 | +1 | +1 | +1 | +1 | +1 | +1 |
+| `→` | Baris | +1 | +1 | +1 | +1 | +2 | +1 | +2 | +2 |
+| `¦` | Pemisah Baris | +1 | +1 | +1 | +1 | +1 | +1 | +1 | +1 |
+| `≡` | Binder | +1 | +1 | +1 | +1 | +1 | +1 | +1 | +1 |
+| `¤` | Value Ref | +1 | +1 | +1 | +1 | +1 | +1 | +1 | +1 |
+| `※` | Grid Ref | +1 | +1 | +1 | +1 | +1 | +1 | +1 | +1 |
+| `◆` | True | +1 | +1 | +1 | +1 | +1 | +1 | +2 | +1 |
+| `◇` | False | +1 | +1 | +1 | +1 | +1 | +1 | +1 | +1 |
+| `○` | Null | +1 | +1 | +1 | +1 | +1 | +1 | +1 | +1 |
+
+### 3.2 Metodologi
+
+- **Pendekatan baseline**: Setiap karakter penanda didepankan ke string tetap `"char hyuze"`. Hitungan token baseline dari `"char hyuze"` saja dikurangkan untuk mengisolasi biaya penanda.
+- **System prompt**: Provider berbasis API (MiMo, SiliconFlow, OpenAI, Claude) **tidak menggunakan system prompt** — hanya satu pesan user yang dikirim. xAI/Grok menggunakan system prompt `"Respond with only: ok"` untuk menstabilkan output agar ekstraksi metrik konsisten.
+- **MiMo**: Diuji via MiMo API (`mimo-v2.5`).
+- **DeepSeek**: Diuji via SiliconFlow API (`deepseek-ai/DeepSeek-V3`).
+- **Grok**: Diuji via xAI web console (otomasi puppeteer, `console.x.ai`).
+- **Model Cina**: Diuji via SiliconFlow API (GLM-5.1, Qwen3.6-35B-A3B, Hy3-preview, Kimi-K2.6, Nex-N2-Pro).
+
+*Spesifikasi Resmi ADN - Senin, 25 Mei 2026*
