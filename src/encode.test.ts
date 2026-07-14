@@ -213,4 +213,48 @@ describe("MarkZero Encoder (Default Mode)", () => {
     const rootOutOfBounds = decodedOutOfBounds[0];
     expect(rootOutOfBounds.missing).toBeNull();
   });
+
+  test("GRID_REF edge cases: malformed references resolve correctly", () => {
+    // ※ without number → parseInt("") = NaN → null
+    const payloadNoNum = "░→x≡※";
+    const decodedNoNum = decode(payloadNoNum);
+    expect(decodedNoNum[0].x).toBeNull();
+
+    // ※ + non-digit suffix → parseInt("abc") = NaN → null
+    const payloadNonDigit = "░→x≡※abc";
+    const decodedNonDigit = decode(payloadNonDigit);
+    expect(decodedNonDigit[0].x).toBeNull();
+
+    // ※ + negative index → parseInt("-1") = -1 → null (index -1 not in array)
+    const payloadNegative = "░→x≡※-1";
+    const decodedNegative = decode(payloadNegative);
+    expect(decodedNegative[0].x).toBeNull();
+  });
+
+  test("triple nested grids (3 levels deep) resolve recursively", () => {
+    // Grid 0: root → data ≡ ※1
+    // Grid 1: child → items ≡ ※2
+    // Grid 2: leaf → ["x", "y"]
+    const payload = "░→data≡※1░→items≡※2░→x→y";
+    const decoded = decode(payload);
+    const root = decoded[0];
+    expect(root.data.items[0]).toBe("x");
+    expect(root.data.items[1]).toBe("y");
+  });
+
+  test("circular 2-grid reference: grid0→※1, grid1→※0 resolves gracefully", () => {
+    // Grid 0 has ref to grid 1, grid 1 has ref to grid 0 (parent)
+    // ※0 always resolves to null → no infinite loop
+    const payload = "░→x≡※1░→ref≡※0";
+    const decoded = decode(payload);
+    const root = decoded[0];
+    expect(root.x.ref).toBeNull(); // ※0 → null
+  });
+
+  test("undefined grid (※N where N never defined) resolves to null", () => {
+    const payload = "░→a≡※5→b≡※3";
+    const decoded = decode(payload);
+    expect(decoded[0].a).toBeNull();
+    expect(decoded[0].b).toBeNull();
+  });
 });

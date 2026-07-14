@@ -66,7 +66,11 @@ ADN dilengkapi fitur-fitur mutakhir yang dirancang untuk efisiensi data ekstrem 
 - **Empty Collections**: Set kosong adalah `░`. Map kosong adalah `░≡`.
 - **Nilai Skalar**: Nilai skalar (`◆`, `◇`, `○`) adalah nilai sel di dalam baris Grid. Tidak muncul di luar Grid.
 - **Penghilangan Separator Trailing**: Separator `¦` trailing BOLEH tidak ada ketika sel-sel terakhir di akhir baris kosong. Sel trailing yang hilang diperlakukan sebagai string kosong.
-- **Unresolvable Referencing**: Referensi grid atau value tidak dapat diselesaikan ketika indeks di luar jangkauan atau membentuk dependensi melingkar. Referensi yang tidak dapat diselesaikan menghasilkan `null`.
+- **Unresolvable Referencing**: Referensi grid atau value tidak dapat diselesaikan dalam kasus-kasus berikut. Seluruh referensi yang tidak dapat diselesaikan menghasilkan `null`.
+  - **Di luar jangkauan**: Indeks melebihi jumlah grid yang didefinisikan (contoh: `※99` ketika hanya ada 3 grid).
+  - **Dependensi melingkar**: Grid 0 merujuk ke dirinya sendiri (`※0`). Karena indeks 0 adalah root, referensi diri sendiri selalu menghasilkan `null` untuk mencegah loop tak terbatas.
+  - **Referensi malformed**: `※` diikuti karakter non-digit (contoh: `※abc`, `※-1`, atau `※` tanpa angka). `parseInt` mengembalikan `NaN` atau indeks negatif, keduanya menghasilkan `null`.
+  - **Grid undefined**: Indeks menunjuk ke grid yang tidak pernah didefinisikan dalam payload (contoh: `※5` ketika grid 0–2 ada).
 
 
 

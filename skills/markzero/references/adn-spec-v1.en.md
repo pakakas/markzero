@@ -66,7 +66,11 @@ ADN includes advanced features designed for extreme data efficiency and non-line
 - **Empty Collections**: An empty Set is `░`. An empty Map is `░≡`.
 - **Scalar Values**: Scalar values (`◆`, `◇`, `○`) are cell values within a Grid row. They do not appear outside a Grid.
 - **Trailing Separator Omission**: Trailing `¦` separators MAY be absent when the last cells in a row are empty. Missing trailing cells are treated as empty strings.
-- **Unresolvable Referencing**: A grid or value reference is unresolvable when the index is out of range or forms a circular dependency. Unresolvable references resolve to `null`.
+- **Unresolvable Referencing**: A grid or value reference is unresolvable in the following cases. All unresolvable references resolve to `null`.
+  - **Out of range**: Index exceeds the number of defined grids (e.g. `※99` when only 3 grids exist).
+  - **Circular dependency**: Grid 0 references itself (`※0`). Since index 0 is the root, self-references always resolve to `null` to prevent infinite loops.
+  - **Malformed reference**: `※` followed by non-digit characters (e.g. `※abc`, `※-1`, or bare `※` without a number). `parseInt` returns `NaN` or negative index, both resolve to `null`.
+  - **Undefined grid**: Index points to a grid that was never defined in the payload (e.g. `※5` when grids 0–2 exist).
 
 
 
