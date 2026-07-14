@@ -139,33 +139,18 @@ function findFirstUnescaped(marker: string, text: string): number {
   return text.indexOf(marker);
 }
 
-export function decode(adnString: string, reviverOrContext?: any, context?: any): any[] {
-  if (!adnString) throw new Error("Input string is required");
-
-  let reviver: Reviver | undefined;
-  let ctx: any;
-  if (typeof reviverOrContext === "function") {
-    reviver = reviverOrContext;
-    ctx = context;
-  } else {
-    ctx = reviverOrContext;
-  }
-
-  if (adnString.startsWith(MARKERS.MESSAGE_START)) {
-    adnString = adnString.substring(MARKERS.MESSAGE_START.length);
-  }
-
-  let pool: string[] = [];
+function decodeGrids(adnString: string, reviver?: Reviver, ctx?: any): any[] {
   let cursor = 0;
   const blockMarkers = [MARKERS.GRID_MARKER];
 
   const { pos: poolEndRelative } = findBoundary(adnString, [MARKERS.MZ_ENVELOPE_END, MARKERS.GRID_MARKER], 0);
   const poolEnd = poolEndRelative === NOT_FOUND ? adnString.length : poolEndRelative;
-  const poolPart = adnString.substring(0, poolEnd);
-  pool = splitEscaped(poolPart, MARKERS.VALUE_MARKER).filter(item => item !== "");
   cursor = poolEndRelative !== NOT_FOUND && adnString[poolEndRelative] === MARKERS.MZ_ENVELOPE_END ? poolEndRelative + MARKERS.MZ_ENVELOPE_END.length : poolEnd;
 
-  const decodedResults: any[] = [];
+  // Build pool from interned values
+  const poolPart = adnString.substring(0, poolEnd);
+  const pool = splitEscaped(poolPart, MARKERS.VALUE_MARKER).filter(item => item !== "");
+
   const resolve = (value: string): any => {
     let raw: string = value;
     if (value.startsWith(MARKERS.VALUE_REF)) {
@@ -173,36 +158,37 @@ export function decode(adnString: string, reviverOrContext?: any, context?: any)
       raw = pool[index] !== undefined ? pool[index] : value;
     } else if (value.startsWith(MARKERS.GRID_REF)) {
       if (value === MARKERS.GRID_REF + "0") return null;
-      return value; // Leave grid references unresolved in Pass 1
+      return value;
     }
 
     if (ctx && typeof ctx.unescape === "function") {
-      return ctx.unescape(raw);
+      raw = ctx.unescape(raw);
+    } else {
+      raw = unescape(raw);
     }
-    return unescape(raw);
+
+    if (typeof raw === "string" && raw.startsWith(MARKERS.GRID_MARKER)) {
+      return readGrid(raw, resolve, reviver);
+    }
+    return raw;
   };
 
-  // 2. Extract Payload Blocks
-
+  const decodedResults: any[] = [];
   while (cursor < adnString.length) {
     const marker = adnString[cursor];
-    if (!blockMarkers.includes(marker!)) {
-      break;
-    }
+    if (!blockMarkers.includes(marker!)) break;
 
     const { pos: nextBoundary } = findBoundary(adnString, [MARKERS.MZ_ENVELOPE_END, MARKERS.GRID_MARKER], cursor + ID_OFFSET);
     const actualEnd = nextBoundary === NOT_FOUND ? adnString.length : nextBoundary;
     const content = adnString.substring(cursor + ID_OFFSET, actualEnd);
 
     if (marker === MARKERS.GRID_MARKER) {
-      const decodedRows = readGrid(marker + content, resolve, reviver);
-      decodedResults.push(decodedRows);
+      decodedResults.push(readGrid(marker + content, resolve, reviver));
     }
 
     cursor = nextBoundary !== NOT_FOUND && adnString[nextBoundary] === MARKERS.MZ_ENVELOPE_END ? nextBoundary + MARKERS.MZ_ENVELOPE_END.length : actualEnd;
   }
 
-  // Pass 2: Recursively resolve grid references
   function resolveGridRefs(val: any, decodedResults: any[], reviver?: Reviver, parent?: any, key?: any): any {
     if (typeof val === "string" && val.startsWith(MARKERS.GRID_REF)) {
       const index = parseInt(val.substring(MARKERS.GRID_REF.length), DECIMAL_RADIX);
@@ -230,7 +216,35 @@ export function decode(adnString: string, reviverOrContext?: any, context?: any)
     decodedResults[i] = resolveGridRefs(decodedResults[i], decodedResults, reviver, decodedResults, i);
   }
 
-  pool.push(...decodedResults);
+  return decodedResults;
+}
+
+export { decodeGrids };
+
+export function decode(adnString: string, reviverOrContext?: any, context?: any): any[] {
+  if (!adnString) throw new Error("Input string is required");
+
+  let reviver: Reviver | undefined;
+  let ctx: any;
+  if (typeof reviverOrContext === "function") {
+    reviver = reviverOrContext;
+    ctx = context;
+  } else {
+    ctx = reviverOrContext;
+  }
+
+  if (adnString.startsWith(MARKERS.MESSAGE_START)) {
+    adnString = adnString.substring(MARKERS.MESSAGE_START.length);
+  }
+
+  // Build pool for return
+  const { pos: poolEndRelative } = findBoundary(adnString, [MARKERS.MZ_ENVELOPE_END, MARKERS.GRID_MARKER], 0);
+  const poolEnd = poolEndRelative === NOT_FOUND ? adnString.length : poolEndRelative;
+  const poolPart = adnString.substring(0, poolEnd);
+  const pool = splitEscaped(poolPart, MARKERS.VALUE_MARKER).filter(item => item !== "");
+
+  const grids = decodeGrids(adnString, reviver, ctx);
+  pool.push(...grids);
   return pool;
 }
 

@@ -10,3 +10,6 @@ export {
 //deprecated
 export { encode } from './adn/encode'
 export { decode } from './adn/decode'
+
+export { decodeMZ } from './mz/decode'
+export type { MZMessage, MZBlock } from './mz/decode'
