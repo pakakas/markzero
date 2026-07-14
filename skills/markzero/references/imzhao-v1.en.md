@@ -1,7 +1,7 @@
-# Agentic Specification (v1)
+# iMZHAO Specification (v1)
 
 ## Overview
-**Agentic** is the Agent Intermediate Representation (AIR) protocol for handling tool invocation, execution, and human-in-the-loop (HITL) workflows within LLM text streams.
+**iMZHAO (MarkZero Hybrid AgentOps)** is the Agent Intermediate Representation (AIR) protocol for handling tool invocation, execution, and human-in-the-loop (HITL) workflows within LLM text streams.
 
 > For data serialization, see **[ADN Specification](adn-spec-v1.en.md)**.
 > For message envelope format, see **[MarkZero Protocol Specification](markzero-spec.en.md)**.
@@ -153,4 +153,4 @@ Agent tool sends: tool cmd --dry-run
 | `old-tool` (legacy) | "unknown option" | Ask once, then "always" |
 
 ---
-*Official Agentic Specification — updated July 14, 2026*
+*Official iMZHAO Specification — updated July 14, 2026*
