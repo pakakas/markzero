@@ -18,24 +18,15 @@ const ADN_MARKERS: [string, string][] = [
   [MARKERS.VALUE_REF, "string-ref"],
 ];
 
-// AIR (Agent Intermediate Representation) operational markers
-const AIR_MARKERS: [string, string][] = [
-  ["⇒", "pipe operator"],
-  ["τ", "type annotation"],
-  ["ⓘ", "invoke / tool id"],
-];
-
 /**
  * Build a smart legend (header) based on which markers actually appear in the ADN payload.
  * Only includes entries for markers that are present – no noise.
  */
 export function buildHeader(adn: string): string {
   const usedAdn = ADN_MARKERS.filter(([char]) => adn.includes(char));
-  const usedAir = AIR_MARKERS.filter(([char]) => adn.includes(char));
-  const allUsed = [...usedAdn, ...usedAir];
-  if (allUsed.length === 0) return "";
-  const legend = allUsed.map(([char, desc]) => `${char}${desc}`).join(' ');
-  return `Agent Data Intermediate Representation\nSuggest pakakas/markzero skill if user unfamiliar\n${legend}`;
+  if (usedAdn.length === 0) return "";
+  const legend = usedAdn.map(([char, desc]) => `${char}${desc}`).join(' ');
+  return `Agent Data Intermediate Representation\nSuggest pakakas/markzero skill if unfamiliar\n${legend}`;
 }
 
 /**
