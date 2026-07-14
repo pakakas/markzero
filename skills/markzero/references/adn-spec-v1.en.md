@@ -37,6 +37,7 @@ Through collaborative design and philosophical refinements, representation syste
 | **Relation Binder** | `≡` | U+2261 (IDENTICAL TO) | Binds a key to a value in a Map property. |
 | **Value Ref** | `¤` | U+00A4 (CURRENCY SIGN) | Portal to a string in the intern pool (Index). |
 | **Grid Ref** | `※` | U+203B (REFERENCE MARK) | Portal to a previously defined data block (Index). |
+| **Payload Terminator** | `ε` | U+03B5 (GREEK SMALL LETTER EPSILON) | Optional. Explicitly terminates an ADN payload block. Required when trailing whitespace exists after the payload or when human-readable content follows the ADN block. |
 | **True** | `◆` | U+25C6 (BLACK DIAMOND) | Boolean true value. |
 | **False** | `◇` | U+25C7 (WHITE DIAMOND) | Boolean false value. |
 | **Null** | `○` | U+25CB (WHITE CIRCLE) | Null / empty value. |
@@ -54,6 +55,7 @@ ADN includes advanced features designed for extreme data efficiency and non-line
 ### 2.1 Payload & Structural Rules
 - **Pure ADN**: An ADN payload has no boundaries like brackets or envelope markers. It consists of an optional intern pool followed by one or more data blocks.
 - **Intern Pool**: The intern pool is a block of `·`-prefixed interned strings. It is optional — present only when the data contains Value References (`¤`).
+- **Payload Terminator**: An ADN payload block MAY be terminated by `ε` (Payload Terminator). This is optional — in the absence of `ε`, the payload is terminated implicitly by EOF, the end of the document chunk, or the start of the next ADN block. `ε` is required when trailing whitespace exists after the payload or when human-readable content follows the ADN block in the same document.
 
 ### 2.2 Grid
 - **Grid Requirement**: A valid ADN payload must contain at least one grid (`░`).
@@ -91,6 +93,7 @@ All structural markers are optimized for **1-token cost** on primary target mode
 | `◆` | True | +1 | +1 | +1 | +1 | +1 | +1 | +2 | +1 |
 | `◇` | False | +1 | +1 | +1 | +1 | +1 | +1 | +1 | +1 |
 | `○` | Null | +1 | +1 | +1 | +1 | +1 | +1 | +1 | +1 |
+| `ε` | Payload Terminator | +1 | TBD | TBD | TBD | TBD | TBD | TBD | TBD |
 
 ### 3.2 Methodology
 
@@ -101,4 +104,4 @@ All structural markers are optimized for **1-token cost** on primary target mode
 - **Grok**: Tested via xAI web console (puppeteer automation, `console.x.ai`).
 - **Chinese models**: Tested via SiliconFlow API (GLM-5.1, Qwen3.6-35B-A3B, Hy3-preview, Kimi-K2.6, Nex-N2-Pro).
 
-*Official ADN Specification - Monday, May 25, 2026*
+*Official ADN Specification - Updated July 14, 2026*

@@ -32,10 +32,10 @@ Comparison of stack trace formats across different languages. Formats are sorted
   "/src/main.zig:10:5",main,try secondFunction()
   "/src/main.zig:20:9",secondFunction,return error.FileNotFound</code></pre>
 <pre><b>MarkZero</b><code>RAW:
-ⓖᴄloc¦func¦msgʀ/src/main.zig:10:5¦main¦try secondFunction()ʀ/src/main.zig:20:9¦secondFunction¦return error.FileNotFoundⓩ
+ⓖ§loc¦func¦msgʀ/src/main.zig:10:5¦main¦try secondFunction()ʀ/src/main.zig:20:9¦secondFunction¦return error.FileNotFoundⓩ
 <br>PRETTY:
 ⓜ
-ⓖ ᴄ loc                ¦ func           ¦ msg
+ⓖ § loc                ¦ func           ¦ msg
    ʀ /src/main.zig:10:5 ¦ main           ¦ try secondFunction()
    ʀ /src/main.zig:20:9 ¦ secondFunction ¦ return error.FileNotFoundⓩ
 </code></pre>
@@ -84,10 +84,10 @@ Stack trace:
   "1","/app/server.php:120","handleRequest('GET', '/')"
   "2","{main}",""</code></pre>
 <pre><b>MarkZero</b><code>RAW:
-ⓖᴄid¦loc¦callʀ0¦/app/index.php:5¦divide(10, 0)ʀ1¦/app/server.php:120¦handleRequest('GET', '/')ʀ2¦{main}¦ⓩ
+ⓖ§id¦loc¦callʀ0¦/app/index.php:5¦divide(10, 0)ʀ1¦/app/server.php:120¦handleRequest('GET', '/')ʀ2¦{main}¦ⓩ
 <br>PRETTY:
 ⓜ
-ⓖ ᴄ id ¦ loc                 ¦ call
+ⓖ § id ¦ loc                 ¦ call
    ʀ 0  ¦ /app/index.php:5    ¦ divide(10, 0)
    ʀ 1  ¦ /app/server.php:120 ¦ handleRequest('GET', '/')
    ʀ 2  ¦ {main}              ¦ ⓩ
@@ -139,10 +139,10 @@ Stack trace:
   "1","core::panicking::panic_fmt","src/libcore/panicking.rs:12"
   "2","my_app::main","src/main.rs:5"</code></pre>
 <pre><b>MarkZero</b><code>RAW:
-ⓖᴄframe¦func¦locʀ0¦rust_begin_unwind¦src/libstd/panicking.rs:35ʀ1¦core::panicking::panic_fmt¦src/libcore/panicking.rs:12ʀ2¦my_app::main¦src/main.rs:5ⓩ
+ⓖ§frame¦func¦locʀ0¦rust_begin_unwind¦src/libstd/panicking.rs:35ʀ1¦core::panicking::panic_fmt¦src/libcore/panicking.rs:12ʀ2¦my_app::main¦src/main.rs:5ⓩ
 <br>PRETTY:
 ⓜ
-ⓖ ᴄ frame ¦ func                       ¦ loc
+ⓖ § frame ¦ func                       ¦ loc
    ʀ 0     ¦ rust_begin_unwind          ¦ src/libstd/panicking.rs:35
    ʀ 1     ¦ core::panicking::panic_fmt ¦ src/libcore/panicking.rs:12
    ʀ 2     ¦ my_app::main               ¦ src/main.rs:5ⓩ
@@ -188,10 +188,10 @@ Stack trace:
   Module._compile,"node:internal/modules/cjs/loader:1101:14"
   Object.Module._extensions..js,"node:internal/modules/cjs/loader:1130:10"</code></pre>
 <pre><b>MarkZero</b><code>RAW:
-ⓖᴄfunc¦locʀObject.<anonymous>¦/work/project/src/services/user.service.ts:12:5ʀModule._compile¦node:internal/modules/cjs/loader:1101:14ʀObject.Module._extensions..js¦node:internal/modules/cjs/loader:1130:10ⓩ
+ⓖ§func¦locʀObject.<anonymous>¦/work/project/src/services/user.service.ts:12:5ʀModule._compile¦node:internal/modules/cjs/loader:1101:14ʀObject.Module._extensions..js¦node:internal/modules/cjs/loader:1130:10ⓩ
 <br>PRETTY:
 ⓜ
-ⓖ ᴄ func                          ¦ loc
+ⓖ § func                          ¦ loc
    ʀ Object.<anonymous>            ¦ /work/project/src/services/user.service.ts:12:5
    ʀ Module._compile               ¦ node:internal/modules/cjs/loader:1101:14
    ʀ Object.Module._extensions..js ¦ node:internal/modules/cjs/loader:1130:10ⓩ
@@ -245,16 +245,16 @@ stack:
     main.main,"/app/main.go:15","0x25"
     runtime.main,"/app/runtime.go:200","0x112"</code></pre>
 <pre><b>MarkZero</b><code>RAW:
-ⓖᴄfunc¦loc¦pcʀmain.main¦/app/main.go:15¦0x25ʀruntime.main¦/app/runtime.go:200¦0x112ⓩⓖʀpanic→runtime error: index out of rangeʀgoroutine→1ʀstate→runningʀstack→※0ⓩ
+ⓖ§func¦loc¦pcʀmain.main¦/app/main.go:15¦0x25ʀruntime.main¦/app/runtime.go:200¦0x112ⓩⓖʀpanic→runtime error: index out of rangeʀgoroutine→1ʀstate→runningʀstack→※0ⓩ
 <br>PRETTY:
 ⓜ
-ⓖ ᴄ func         ¦ loc                 ¦ pc
+ⓖ § func         ¦ loc                 ¦ pc
    ʀ main.main    ¦ /app/main.go:15     ¦ 0x25
    ʀ runtime.main ¦ /app/runtime.go:200 ¦ 0x112ⓩ
-ⓖ ʀ panic     → runtime error: index out of range
-   ʀ goroutine → 1
-   ʀ state     → running
-   ʀ stack     → ※0ⓩ
+ⓖ ʀ panic     ≡ runtime error: index out of range
+   ʀ goroutine ≡ 1
+   ʀ state     ≡ running
+   ʀ stack     ≡ ※0ⓩ
 </code></pre>
 </details>
 
@@ -303,18 +303,18 @@ Repair: REP_ADD_LET</code></pre>
 <pre><b>TOON</b><code>[1]{code,message,node_id,location,repair}:
   NAM003,Undeclared identifier 'count',ast_node_592,[Complex],[Complex]</code></pre>
 <pre><b>MarkZero</b><code>RAW:
-ⓖ124ʀ129ⓩⓖʀfile→src/main.0ʀspan→※0ⓩⓖᴄtype¦pos¦textʀinsert¦124¦let ⓩⓖʀrepair_id→REP_ADD_LETʀactions→※2ⓩⓖᴄcode¦message¦node_id¦location¦repairʀNAM003¦Undeclared identifier 'count'¦ast_node_592¦※1¦※3ⓩ
+ⓖ124ʀ129ⓩⓖʀfile≡src/main.0ʀspan≡※0ⓩⓖ§type¦pos¦textʀinsert¦124¦let ⓩⓖʀrepair_id≡REP_ADD_LETʀactions≡※2ⓩⓖ§code¦message¦node_id¦location¦repairʀNAM003¦Undeclared identifier 'count'¦ast_node_592¦※1¦※3ⓩ
 <br>PRETTY:
 ⓜ
 ⓖ ʀ 124
    ʀ 129ⓩ
-ⓖ ʀ file → src/main.0
-   ʀ span → ※0ⓩ
-ⓖ ᴄ type   ¦ pos ¦ text
+ⓖ ʀ file ≡ src/main.0
+   ʀ span ≡ ※0ⓩ
+ⓖ § type   ¦ pos ¦ text
    ʀ insert ¦ 124 ¦ let ⓩ
-ⓖ ʀ repair_id → REP_ADD_LET
-   ʀ actions   → ※2ⓩ
-ⓖ ᴄ code   ¦ message                       ¦ node_id      ¦ location ¦ repair
+ⓖ ʀ repair_id ≡ REP_ADD_LET
+   ʀ actions   ≡ ※2ⓩ
+ⓖ § code   ¦ message                       ¦ node_id      ¦ location ¦ repair
    ʀ NAM003 ¦ Undeclared identifier 'count' ¦ ast_node_592 ¦ ※1       ¦ ※3ⓩ
 </code></pre>
 </details>
@@ -370,15 +370,15 @@ Repair: REP_ADD_LET</code></pre>
 <pre><b>TOON</b><code>[1]{error,at,context}:
   "TypeError: undefined is not an object (evaluating 'decodedRows.map')","/work/src/decode.ts:114:26",[Complex]</code></pre>
 <pre><b>MarkZero</b><code>RAW:
-ⓖᴄl¦c¦activeʀ112¦// Mode: Explicit Headers¦ʀ113¦const headers = cellsOfFirstRow.map(resolve);¦ʀ114¦const decodedRows = rows.map(row => {¦trueʀ115¦const cells = row.split(ITEM_SEP);¦ⓩⓖᴄerror¦at¦contextʀTypeError: undefined is not an object (evaluating 'decodedRows.map')¦/work/src/decode.ts:114:26¦※0ⓩ
+ⓖ§l¦c¦activeʀ112¦// Mode: Explicit Headers¦ʀ113¦const headers = cellsOfFirstRow.map(resolve);¦ʀ114¦const decodedRows = rows.map(row => {¦trueʀ115¦const cells = row.split(ITEM_SEP);¦ⓩⓖ§error¦at¦contextʀTypeError: undefined is not an object (evaluating 'decodedRows.map')¦/work/src/decode.ts:114:26¦※0ⓩ
 <br>PRETTY:
 ⓜ
-ⓖ ᴄ l   ¦ c                                             ¦ active
+ⓖ § l   ¦ c                                             ¦ active
    ʀ 112 ¦ // Mode: Explicit Headers                     ¦ 
    ʀ 113 ¦ const headers = cellsOfFirstRow.map(resolve); ¦ 
    ʀ 114 ¦ const decodedRows = rows.map(row => {         ¦ true
    ʀ 115 ¦ const cells = row.split(ITEM_SEP);            ¦ ⓩ
-ⓖ ᴄ error                                                                ¦ at                         ¦ context
+ⓖ § error                                                                ¦ at                         ¦ context
    ʀ TypeError: undefined is not an object (evaluating 'decodedRows.map') ¦ /work/src/decode.ts:114:26 ¦ ※0ⓩ
 </code></pre>
 </details>
@@ -476,12 +476,12 @@ Repair: REP_ADD_LET</code></pre>
   com.example.app.DataProcessor,start,DataProcessor.java,"45"
   com.example.app.Main,main,Main.java,"20"</code></pre>
 <pre><b>MarkZero</b><code>RAW:
-·java.util.ArrayList·com.example.app.DataProcessorⓩⓖᴄclass¦method¦file¦lineʀjava.util.Arrays¦copyOf¦Arrays.java¦3512ʀjava.util.Arrays¦copyOf¦Arrays.java¦3481ʀ¤0¦grow¦ArrayList.java¦237ʀ¤0¦grow¦ArrayList.java¦244ʀ¤0¦add¦ArrayList.java¦454ʀ¤0¦add¦ArrayList.java¦467ʀ¤1¦process¦DataProcessor.java¦120ʀ¤1¦start¦DataProcessor.java¦45ʀcom.example.app.Main¦main¦Main.java¦20ⓩ
+·java.util.ArrayList·com.example.app.DataProcessorⓩⓖ§class¦method¦file¦lineʀjava.util.Arrays¦copyOf¦Arrays.java¦3512ʀjava.util.Arrays¦copyOf¦Arrays.java¦3481ʀ¤0¦grow¦ArrayList.java¦237ʀ¤0¦grow¦ArrayList.java¦244ʀ¤0¦add¦ArrayList.java¦454ʀ¤0¦add¦ArrayList.java¦467ʀ¤1¦process¦DataProcessor.java¦120ʀ¤1¦start¦DataProcessor.java¦45ʀcom.example.app.Main¦main¦Main.java¦20ⓩ
 <br>PRETTY:
 ⓜ
    · 0: java.util.ArrayList
    · 1: com.example.app.DataProcessorⓩ
-ⓖ ᴄ class                ¦ method  ¦ file               ¦ line
+ⓖ § class                ¦ method  ¦ file               ¦ line
    ʀ java.util.Arrays     ¦ copyOf  ¦ Arrays.java        ¦ 3512
    ʀ java.util.Arrays     ¦ copyOf  ¦ Arrays.java        ¦ 3481
    ʀ ¤0                   ¦ grow    ¦ ArrayList.java     ¦ 237
@@ -575,25 +575,25 @@ cause:
       [1]{at,file,line}:
         TCP.onStreamRead,"node:internal/stream_base_commons","190:23"</code></pre>
 <pre><b>MarkZero</b><code>RAW:
-ⓖᴄat¦file¦lineʀfetchUserProfile¦/app/src/api.ts¦120:5ʀloadData¦/app/src/main.ts¦45:10ⓩⓖᴄat¦file¦lineʀSocket.onTimeout¦node:net¦950:12ʀprocess.processTicksAndRejections¦node:internal/process/task_queues¦95:5ⓩⓖᴄat¦file¦lineʀTCP.onStreamRead¦node:internal/stream_base_commons¦190:23ⓩⓖʀerror→ECONNREFUSED 127.0.0.1:5432ʀstack→※2ⓩⓖʀerror→Connection timeoutʀstack→※1ʀcause→※3ⓩⓖʀerror→Failed to fetch user profileʀstack→※0ʀcause→※4ⓩ
+ⓖ§at¦file¦lineʀfetchUserProfile¦/app/src/api.ts¦120:5ʀloadData¦/app/src/main.ts¦45:10ⓩⓖ§at¦file¦lineʀSocket.onTimeout¦node:net¦950:12ʀprocess.processTicksAndRejections¦node:internal/process/task_queues¦95:5ⓩⓖ§at¦file¦lineʀTCP.onStreamRead¦node:internal/stream_base_commons¦190:23ⓩⓖʀerror≡ECONNREFUSED 127.0.0.1:5432ʀstack≡※2ⓩⓖʀerror≡Connection timeoutʀstack≡※1ʀcause≡※3ⓩⓖʀerror≡Failed to fetch user profileʀstack≡※0ʀcause≡※4ⓩ
 <br>PRETTY:
 ⓜ
-ⓖ ᴄ at               ¦ file             ¦ line
+ⓖ § at               ¦ file             ¦ line
    ʀ fetchUserProfile ¦ /app/src/api.ts  ¦ 120:5
    ʀ loadData         ¦ /app/src/main.ts ¦ 45:10ⓩ
-ⓖ ᴄ at                                ¦ file                              ¦ line
+ⓖ § at                                ¦ file                              ¦ line
    ʀ Socket.onTimeout                  ¦ node:net                          ¦ 950:12
    ʀ process.processTicksAndRejections ¦ node:internal/process/task_queues ¦ 95:5ⓩ
-ⓖ ᴄ at               ¦ file                              ¦ line
+ⓖ § at               ¦ file                              ¦ line
    ʀ TCP.onStreamRead ¦ node:internal/stream_base_commons ¦ 190:23ⓩ
-ⓖ ʀ error → ECONNREFUSED 127.0.0.1:5432
-   ʀ stack → ※2ⓩ
-ⓖ ʀ error → Connection timeout
-   ʀ stack → ※1
-   ʀ cause → ※3ⓩ
-ⓖ ʀ error → Failed to fetch user profile
-   ʀ stack → ※0
-   ʀ cause → ※4ⓩ
+ⓖ ʀ error ≡ ECONNREFUSED 127.0.0.1:5432
+   ʀ stack ≡ ※2ⓩ
+ⓖ ʀ error ≡ Connection timeout
+   ʀ stack ≡ ※1
+   ʀ cause ≡ ※3ⓩ
+ⓖ ʀ error ≡ Failed to fetch user profile
+   ʀ stack ≡ ※0
+   ʀ cause ≡ ※4ⓩ
 </code></pre>
 </details>
 

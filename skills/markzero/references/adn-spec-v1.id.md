@@ -37,6 +37,7 @@ Melalui desain kolaboratif dan penyempurnaan filosofis, sistem representasi logi
 | **Relation Binder** | `≡` | U+2261 (IDENTICAL TO) | Mengikat kunci (*key*) ke nilai (*value*) pada properti Map. |
 | **Value Ref** | `¤` | U+00A4 (CURRENCY SIGN) | Portal ke sebuah string ter-intern di dalam intern pool (berdasarkan Indeks). |
 | **Grid Ref** | `※` | U+203B (REFERENCE MARK) | Portal ke blok data yang telah didefinisikan sebelumnya (berdasarkan Indeks). |
+| **Payload Terminator** | `ε` | U+03B5 (GREEK SMALL LETTER EPSILON) | Opsional. Mengakhiri blok payload ADN secara eksplisit. Diperlukan ketika ada whitespace trailing setelah payload atau ketika konten yang dapat dibaca manusia mengikuti blok ADN. |
 | **True** | `◆` | U+25C6 (BLACK DIAMOND) | Nilai boolean true. |
 | **False** | `◇` | U+25C7 (WHITE DIAMOND) | Nilai boolean false. |
 | **Null** | `○` | U+25CB (WHITE CIRCLE) | Nilai null / kosong. |
@@ -54,6 +55,7 @@ ADN dilengkapi fitur-fitur mutakhir yang dirancang untuk efisiensi data ekstrem 
 ### 2.1 Payload & Aturan Struktural
 - **Pure ADN**: Payload ADN tidak memiliki batasan seperti bracket atau marker envelope. Payload terdiri dari intern pool opsional yang diikuti satu atau lebih blok data.
 - **Intern Pool**: Intern pool adalah blok string yang diawali `·`. Bersifat opsional — hanya ada jika data mengandung Value Reference (`¤`).
+- **Payload Terminator**: Blok payload ADN BOLEH diakhiri oleh `ε` (Payload Terminator). Ini bersifat opsional — tanpa `ε`, payload diakhiri secara implisit oleh EOF, akhir chunk dokumen, atau awal blok ADN berikutnya. `ε` diperlukan ketika ada whitespace trailing setelah payload atau ketika konten yang dapat dibaca manusia mengikuti blok ADN di dokumen yang sama.
 
 ### 2.2 Grid
 - **Kebutuhan Grid**: Payload ADN yang valid harus mengandung setidaknya satu grid (`░`).
@@ -90,6 +92,7 @@ Semua penanda struktural dioptimalkan untuk biaya **1 token** pada model target 
 | `◆` | True | +1 | +1 | +1 | +1 | +1 | +1 | +2 | +1 |
 | `◇` | False | +1 | +1 | +1 | +1 | +1 | +1 | +1 | +1 |
 | `○` | Null | +1 | +1 | +1 | +1 | +1 | +1 | +1 | +1 |
+| `ε` | Payload Terminator | +1 | TBD | TBD | TBD | TBD | TBD | TBD | TBD |
 
 ### 3.2 Metodologi
 
@@ -100,4 +103,4 @@ Semua penanda struktural dioptimalkan untuk biaya **1 token** pada model target 
 - **Grok**: Diuji via xAI web console (otomasi puppeteer, `console.x.ai`).
 - **Model Cina**: Diuji via SiliconFlow API (GLM-5.1, Qwen3.6-35B-A3B, Hy3-preview, Kimi-K2.6, Nex-N2-Pro).
 
-*Spesifikasi Resmi ADN - Senin, 25 Mei 2026*
+*Spesifikasi Resmi ADN - Diperbarui 14 Juli 2026*

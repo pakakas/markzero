@@ -14,10 +14,10 @@ export const MARKERS = {
   NULL_MARKER: "○",        // WHITE CIRCLE (U+25CB) – NULL VALUE
   TITLE_MARKER: "†",       // DAGGER (U+2020) – TITLE MARKER
   MESSAGE_START: "М",      // CYRILLIC CAPITAL LETTER EM (U+041C) – MESSAGE START MARKER
+  PAYLOAD_TERMINATOR: "ε",  // GREEK SMALL LETTER EPSILON (U+03B5) – ADN PAYLOAD END
 
-  // 2 berikut ini deprecated per new `AI chat document` design
-  MZ_ENVELOPE_START: "М",  // CYRILLIC CAPITAL LETTER EM (U+041C) – START MARKER // use MESSAGE_START
-  MZ_ENVELOPE_END: "О",    // CYRILLIC CAPITAL LETTER O (U+041E) – CLOSE MARKER  // akan dibuang
+  // Deprecated alias — use PAYLOAD_TERMINATOR
+  MZ_ENVELOPE_END: "ε",
 } as const;
 
 export const TITLE_SYMBOL = Symbol.for("title"); // Symbol key for bound title (exposed by decoder)

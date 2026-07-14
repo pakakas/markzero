@@ -1,5 +1,3 @@
-export { encode } from "./encode";
-export { decode, type Reviver } from "./decode";
 export {
   ENC_INTERN_ALL,
   ENC_VALUES,
@@ -7,4 +5,8 @@ export {
   MARKERS,
   TITLE_SYMBOL,
 } from "./util";
-export { PROTO_START, PROTO_END, buildHeader, addInlineDecoder } from "./markzero";
+// export { PROTO_START, PROTO_END, buildHeader, addInlineDecoder } from "./encode";
+
+//deprecated
+export { encode } from './adn/encode'
+export { decode } from './adn/decode'
