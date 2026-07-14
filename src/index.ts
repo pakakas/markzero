@@ -12,4 +12,4 @@ export { encode } from './adn/encode'
 export { decode } from './adn/decode'
 
 export { decodeMZ } from './mz/decode'
-export type { MZMessage, MZBlock } from './mz/decode'
+export type { MZMessage, MZBlock, MZBlockType, MZTextBlock, MZDataBlock, MZInvokeBlock } from './mz/decode'
