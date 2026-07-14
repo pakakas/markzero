@@ -9,23 +9,23 @@ const KV = MARKERS.KV_RELATION;
 const T = MARKERS.PAYLOAD_TERMINATOR;
 
 describe("MZ Protocol Decoder", () => {
-  test("single message with one ADN block", () => {
+  test("single message with one data block", () => {
     const input = `${M}assistant@2026-06-24T14:56:07Z\n${G}name${KV}hyuze${R}role${KV}admin`;
     const result = decodeMZ(input) as any;
     expect(result.role).toBe("assistant");
     expect(result.ts).toBe("2026-06-24T14:56:07Z");
     expect(result.blocks.length).toBe(1);
-    expect(result.blocks[0].type).toBe("adn");
-    expect(result.blocks[0].data.name).toBe("hyuze");
-    expect(result.blocks[0].data.role).toBe("admin");
+    expect(result.blocks[0].type).toBe("data");
+    expect(result.blocks[0].payload.name).toBe("hyuze");
+    expect(result.blocks[0].payload.role).toBe("admin");
   });
 
-  test("single message with multiple ADN blocks separated by ε", () => {
+  test("single message with multiple data blocks separated by ε", () => {
     const input = `${M}assistant@2026-06-24T14:56:07Z\n${G}name${KV}hyuze${T}${G}name${KV}alice`;
     const result = decodeMZ(input) as any;
     expect(result.blocks.length).toBe(2);
-    expect(result.blocks[0].data.name).toBe("hyuze");
-    expect(result.blocks[1].data.name).toBe("alice");
+    expect(result.blocks[0].payload.name).toBe("hyuze");
+    expect(result.blocks[1].payload.name).toBe("alice");
   });
 
   test("single message with text block", () => {
@@ -40,19 +40,19 @@ describe("MZ Protocol Decoder", () => {
     const input = `${M}assistant@2026-06-24T14:56:07Z\n${G}${R}code${KV}json${G}name${KV}hyuze`;
     const result = decodeMZ(input) as any;
     expect(result.blocks.length).toBe(1);
-    expect(result.blocks[0].type).toBe("adn");
+    expect(result.blocks[0].type).toBe("data");
     expect(result.blocks[0].code).toBe("json");
-    expect(result.blocks[0].data.name).toBe("hyuze");
+    expect(result.blocks[0].payload.name).toBe("hyuze");
   });
 
-  test("single message with mixed text + ADN blocks", () => {
+  test("single message with mixed text + data blocks", () => {
     const input = `${M}assistant@2026-06-24T14:56:07Z\n${G}text${KV}Here is data:${G}name${KV}hyuze`;
     const result = decodeMZ(input) as any;
     expect(result.blocks.length).toBe(2);
     expect(result.blocks[0].type).toBe("text");
     expect(result.blocks[0].content).toBe("Here is data:");
-    expect(result.blocks[1].type).toBe("adn");
-    expect(result.blocks[1].data.name).toBe("hyuze");
+    expect(result.blocks[1].type).toBe("data");
+    expect(result.blocks[1].payload.name).toBe("hyuze");
   });
 
   test("stream with multiple messages", () => {
@@ -64,14 +64,14 @@ describe("MZ Protocol Decoder", () => {
     expect(Array.isArray(result)).toBe(true);
     expect(result.length).toBe(3);
     expect(result[0].role).toBe("assistant");
-    expect(result[0].blocks[0].data.name).toBe("hyuze");
+    expect(result[0].blocks[0].payload.name).toBe("hyuze");
     expect(result[1].role).toBe("human");
-    expect(result[1].blocks[0].data.error).toBe("count");
+    expect(result[1].blocks[0].payload.error).toBe("count");
     expect(result[2].role).toBe("system");
-    expect(result[2].blocks[0].data.status).toBe("ok");
+    expect(result[2].blocks[0].payload.status).toBe("ok");
   });
 
-  test("stream with mixed text + ADN in different messages", () => {
+  test("stream with mixed text + data in different messages", () => {
     const input =
       `${M}assistant@2026-06-24T14:56:07Z\n${G}text${KV}Hello${G}name${KV}hyuze` +
       `${M}human@2026-06-24T14:56:30Z\n${G}text${KV}Thanks`;
@@ -79,18 +79,18 @@ describe("MZ Protocol Decoder", () => {
     expect(result.length).toBe(2);
     expect(result[0].blocks[0].type).toBe("text");
     expect(result[0].blocks[0].content).toBe("Hello");
-    expect(result[0].blocks[1].type).toBe("adn");
-    expect(result[0].blocks[1].data.name).toBe("hyuze");
+    expect(result[0].blocks[1].type).toBe("data");
+    expect(result[0].blocks[1].payload.name).toBe("hyuze");
     expect(result[1].blocks[0].type).toBe("text");
     expect(result[1].blocks[0].content).toBe("Thanks");
   });
 
-  test("metadata without following data grid becomes standalone adn block", () => {
+  test("metadata without following data grid becomes standalone data block", () => {
     const input = `${M}assistant@2026-06-24T14:56:07Z\n${G}${R}code${KV}ts`;
     const result = decodeMZ(input) as any;
     expect(result.blocks.length).toBe(1);
-    expect(result.blocks[0].type).toBe("adn");
-    expect(result.blocks[0].data.code).toBe("ts");
+    expect(result.blocks[0].type).toBe("data");
+    expect(result.blocks[0].payload.code).toBe("ts");
   });
 
   test("throws on empty input", () => {
@@ -106,5 +106,45 @@ describe("MZ Protocol Decoder", () => {
     const stream = single + `${M}human@2026-06-24T14:56:30Z\n${G}x${KV}y`;
     expect(typeof decodeMZ(single)).toBe("object");
     expect(Array.isArray(decodeMZ(stream))).toBe(true);
+  });
+});
+
+describe("MZ Protocol Decoder - Tool Invoke", () => {
+  test("single tool call", () => {
+    const input = `${M}assistant@2026-06-24T14:56:07Z\n${G}invoke${KV}CLI_SCRIPT`;
+    const result = decodeMZ(input) as any;
+    expect(result.blocks[0].type).toBe("invoke");
+    expect(result.blocks[0].commands).toBe("CLI_SCRIPT");
+  });
+
+  test("parallel tool calls (multi-cell row)", () => {
+    const input = `${M}assistant@2026-06-24T14:56:07Z\n${G}invoke${R}Script1${MARKERS.ROW_SEP}Script2${MARKERS.ROW_SEP}Script3`;
+    const result = decodeMZ(input) as any;
+    expect(result.blocks[0].type).toBe("invoke");
+    expect(result.blocks[0].commands).toEqual(["Script1", "Script2", "Script3"]);
+  });
+
+  test("sequential tool calls (multi-row grid)", () => {
+    const input = `${M}assistant@2026-06-24T14:56:07Z\n${G}invoke${R}Script1${R}Script2${R}Script3`;
+    const result = decodeMZ(input) as any;
+    expect(result.blocks[0].type).toBe("invoke");
+    expect(result.blocks[0].commands).toEqual(["Script1", "Script2", "Script3"]);
+  });
+
+  test("invoke with metadata", () => {
+    const input = `${M}assistant@2026-06-24T14:56:07Z\n${G}${R}code${KV}ts${G}invoke${KV}CLI_SCRIPT`;
+    const result = decodeMZ(input) as any;
+    expect(result.blocks[0].type).toBe("invoke");
+    expect(result.blocks[0].code).toBe("ts");
+    expect(result.blocks[0].commands).toBe("CLI_SCRIPT");
+  });
+
+  test("invoke mixed with text and data blocks", () => {
+    const input = `${M}assistant@2026-06-24T14:56:07Z\n${G}text${KV}Running tool...${G}invoke${KV}CLI_SCRIPT${G}result${KV}ok`;
+    const result = decodeMZ(input) as any;
+    expect(result.blocks.length).toBe(3);
+    expect(result.blocks[0].type).toBe("text");
+    expect(result.blocks[1].type).toBe("invoke");
+    expect(result.blocks[2].type).toBe("data");
   });
 });
