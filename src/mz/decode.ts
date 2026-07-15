@@ -1,7 +1,8 @@
 import { MARKERS } from "../util";
 import { decodeGrids } from "../adn/decode";
+import type { Reviver } from "../adn/decode";
 
-export type MZBlockType = "text" | "data" | "invoke";
+export type MZBlockType = "text" | "data";
 
 export interface MZTextBlock {
   type: "text";
@@ -14,13 +15,7 @@ export interface MZDataBlock {
   [key: string]: any;
 }
 
-export interface MZInvokeBlock {
-  type: "invoke";
-  commands: string | string[];
-  [key: string]: any;
-}
-
-export type MZBlock = MZTextBlock | MZDataBlock | MZInvokeBlock;
+export type MZBlock = MZTextBlock | MZDataBlock;
 
 export interface MZMessage {
   role: string;
@@ -34,47 +29,24 @@ function isTextMap(obj: any): boolean {
   return obj !== null && typeof obj === "object" && !Array.isArray(obj) && "text" in obj;
 }
 
-function isInvokeMap(obj: any): boolean {
-  return obj !== null && typeof obj === "object" && !Array.isArray(obj) && "invoke" in obj;
-}
-
 function isMetadataMap(obj: any): boolean {
   return obj !== null && typeof obj === "object" && !Array.isArray(obj) && "code" in obj;
 }
 
 function classifyGrid(grid: any): MZBlock {
+  if (typeof grid === "string") {
+    return { type: "text", content: grid };
+  }
   if (isTextMap(grid)) {
     return { type: "text", content: grid.text };
-  }
-  if (isInvokeMap(grid)) {
-    const { invoke, ...rest } = grid;
-    const commands = typeof invoke === "string" ? invoke : invoke;
-    return Object.keys(rest).length > 0
-      ? { type: "invoke", commands, ...rest }
-      : { type: "invoke", commands };
-  }
-  // Array format: ["invoke", "Script1", "Script2"] or [["invoke"], ["Script1"]]
-  if (Array.isArray(grid)) {
-    const firstRow = grid[0];
-    const key = Array.isArray(firstRow) ? firstRow[0] : firstRow;
-    if (key === "invoke") {
-      const scripts: string[] = [];
-      for (let i = 1; i < grid.length; i++) {
-        const row = grid[i];
-        if (Array.isArray(row)) {
-          scripts.push(...row);
-        } else {
-          scripts.push(row);
-        }
-      }
-      return { type: "invoke", commands: scripts.length === 1 ? scripts[0] : scripts };
-    }
   }
   return { type: "data", payload: grid };
 }
 
-export function decodeMZ(raw: string): MZMessage | MZMessage[] {
+export function decodeMZ(raw: string, ctx?: any): MZMessage | MZMessage[] {
   if (!raw) throw new Error("Input string is required");
+
+  const reviver = ctx && typeof ctx.reviver === "function" ? ctx.reviver : undefined;
 
   const messages: MZMessage[] = [];
   let remaining = raw;
@@ -96,7 +68,18 @@ export function decodeMZ(raw: string): MZMessage | MZMessage[] {
     const nextMsgIdx = afterHeader.indexOf(MARKERS.MESSAGE_START);
     const payload = nextMsgIdx === -1 ? afterHeader : afterHeader.substring(0, nextMsgIdx);
 
-    const grids = decodeGrids(payload);
+    const trimmedPayload = payload.trim();
+    let grids: any[];
+    if (trimmedPayload && !trimmedPayload.startsWith(MARKERS.GRID_MARKER) && !trimmedPayload.startsWith(MARKERS.VALUE_MARKER)) {
+      let val = trimmedPayload;
+      if (reviver) {
+        const revived = reviver(val, 0, [val]);
+        val = revived === undefined ? val : revived;
+      }
+      grids = [val];
+    } else {
+      grids = decodeGrids(payload, reviver, ctx);
+    }
     const blocks: MZBlock[] = [];
 
     let i = 0;

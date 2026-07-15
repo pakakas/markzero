@@ -202,18 +202,31 @@ function decodeGrids(adnString: string, reviver?: Reviver, ctx?: any): any[] {
     } else if (Array.isArray(val)) {
       for (let i = 0; i < val.length; i++) {
         val[i] = resolveGridRefs(val[i], decodedResults, reviver, val, i);
+        if (reviver) {
+          const revived = reviver(val[i], i, val);
+          val[i] = revived === undefined ? val[i] : revived;
+        }
       }
     } else if (typeof val === "object" && val !== null) {
       for (const k in val) {
         if (k === "Symbol(title)") continue;
         val[k] = resolveGridRefs(val[k], decodedResults, reviver, val, k);
+        if (reviver) {
+          const revived = reviver(val[k], k, val);
+          val[k] = revived === undefined ? val[k] : revived;
+        }
       }
     }
     return val;
   }
 
   for (let i = 0; i < decodedResults.length; i++) {
-    decodedResults[i] = resolveGridRefs(decodedResults[i], decodedResults, reviver, decodedResults, i);
+    let val = resolveGridRefs(decodedResults[i], decodedResults, reviver, decodedResults, i);
+    if (reviver) {
+      const revived = reviver(val, i, decodedResults);
+      val = revived === undefined ? val : revived;
+    }
+    decodedResults[i] = val;
   }
 
   return decodedResults;
@@ -221,17 +234,10 @@ function decodeGrids(adnString: string, reviver?: Reviver, ctx?: any): any[] {
 
 export { decodeGrids };
 
-export function decode(adnString: string, reviverOrContext?: any, context?: any): any[] {
+export function decode(adnString: string, ctx?: any): any[] {
   if (!adnString) throw new Error("Input string is required");
 
-  let reviver: Reviver | undefined;
-  let ctx: any;
-  if (typeof reviverOrContext === "function") {
-    reviver = reviverOrContext;
-    ctx = context;
-  } else {
-    ctx = reviverOrContext;
-  }
+  const reviver = ctx && typeof ctx.reviver === "function" ? ctx.reviver : undefined;
 
   if (adnString.startsWith(MARKERS.MESSAGE_START)) {
     adnString = adnString.substring(MARKERS.MESSAGE_START.length);
