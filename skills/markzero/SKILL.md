@@ -7,7 +7,7 @@ description: Guidance for MarkZero, the Agent Interface (AX) standard. Focuses o
 
 **ADN (Agent Data Notation)** is an AI-native serialization format. Unlike human-centric formats (Markup/Markdown), it uses 1-token non-linear markers to represent data as a multi-dimensional field, optimized for AI attention rather than visual hierarchy.
 
-**MarkZero** is the protocol that defines the structure of the **AI Chat Document**. It merges human conversation and structured machine-executable payloads into a single, cohesive, token-efficient stream document using role-based start markers (`М{ROLE}`) without a close marker. See [MarkZero Protocol Specification](references/markzero-spec.md).
+**MarkZero** is the protocol that defines the structure of the **AI Chat Document**. It merges human conversation and structured machine-executable payloads into a single, cohesive, token-efficient stream document using role-based start markers (`М{ROLE}`) without a close marker. See [MarkZero Protocol Specification](references/markzero-spec.en.md).
 
 ## Structural Markers
 
@@ -43,4 +43,4 @@ Every structural marker is exactly **1 token** in modern LLMs (e.g., GPT-4o).
 ░Files§name¦size→index.ts¦1024→util.ts¦2048
 ```
 
-*For technical specifications and types, see [ADN Specification](references/adn-spec-v1.md).*
+*For technical specifications and types, see [ADN Specification](references/adn-spec-v1.en.md).*

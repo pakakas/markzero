@@ -20,11 +20,11 @@ To manage the streaming boundaries, the ecosystem relies on a trinity of archite
 
 
 ## Documentation
-- [MarkZero Protocol Specification](skills/markzero/references/markzero-spec.md)
+- [MarkZero Protocol Specification](skills/markzero/references/markzero-spec.en.md)
 - [Spesifikasi MarkZero Protocol](skills/markzero/references/markzero-spec.id.md)
-- [ADN Specification](skills/markzero/references/adn-spec-v1.md)
+- [ADN Specification](skills/skills/markzero/references/adn-spec-v1.en.md)
 - [Spesifikasi ADN - Bahasa Indonesia](skills/markzero/references/adn-spec-v1.id.md)
-- [ADN Encoder Specification](skills/markzero/references/adn-encoder-spec-v1.md)
+- [ADN Encoder Specification](skills/markzero/references/adn-encoder-spec-v1.en.md)
 - [Spesifikasi Encoder ADN - Bahasa Indonesia](skills/markzero/references/adn-encoder-spec-v1.id.md)
 
 ## Installation

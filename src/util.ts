@@ -18,10 +18,6 @@ export const MARKERS = {
 
   // Deprecated alias — use PAYLOAD_TERMINATOR
   MZ_ENVELOPE_END: "ε",
-
-  // AIR (Agent Intermediate Representation) markers
-  TYPE_ANNOTATION: "τ",     // GREEK SMALL LETTER TAU (U+03C4) – TYPE ANNOTATION PREFIX
-  INVOKE: "ⓘ",             // CIRCLED LATIN SMALL LETTER I (U+24D8) – INVOKE / TOOL CALL
 } as const;
 
 export const TITLE_SYMBOL = Symbol.for("title"); // Symbol key for bound title (exposed by decoder)
