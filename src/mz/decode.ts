@@ -25,14 +25,14 @@ export interface MZMessage {
 
 const RFC3339_CHARS = new Set("0123456789T:-Z+.");
 
-function parseHeader(s: string): { role: string; ts: string; end: number } | null {
-  if (!s.startsWith(MARKERS.MESSAGE_START)) return null;
-  const atIdx = s.indexOf("@", MARKERS.MESSAGE_START.length);
+function parseHeader(input: string): { role: string; ts: string; end: number } | null {
+  if (!input.startsWith(MARKERS.MESSAGE_START)) return null;
+  const atIdx = input.indexOf("@", MARKERS.MESSAGE_START.length);
   if (atIdx === -1) return null;
-  const role = s.slice(MARKERS.MESSAGE_START.length, atIdx);
+  const role = input.slice(MARKERS.MESSAGE_START.length, atIdx);
   let end = atIdx + 1;
-  while (end < s.length && RFC3339_CHARS.has(s[end])) end++;
-  const ts = s.slice(atIdx + 1, end);
+  while (end < input.length && RFC3339_CHARS.has(input[end])) end++;
+  const ts = input.slice(atIdx + 1, end);
   return { role, ts, end };
 }
 
