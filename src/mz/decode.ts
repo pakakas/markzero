@@ -23,7 +23,7 @@ export interface MZMessage {
   blocks: MZBlock[];
 }
 
-const HEADER_RE = /^М(\w+)@([^\n]+)\n/;
+const HEADER_RE = /^М(\w+)@([\dT:\-Z+.]+)/;
 
 function isTextMap(obj: any): boolean {
   return obj !== null && typeof obj === "object" && !Array.isArray(obj) && "text" in obj;
