@@ -23,7 +23,18 @@ export interface MZMessage {
   blocks: MZBlock[];
 }
 
-const HEADER_RE = /^М(\w+)@([\dT:\-Z+.]+)/;
+const RFC3339_CHARS = new Set("0123456789T:-Z+.");
+
+function parseHeader(s: string): { role: string; ts: string; end: number } | null {
+  if (!s.startsWith(MARKERS.MESSAGE_START)) return null;
+  const atIdx = s.indexOf("@", MARKERS.MESSAGE_START.length);
+  if (atIdx === -1) return null;
+  const role = s.slice(MARKERS.MESSAGE_START.length, atIdx);
+  let end = atIdx + 1;
+  while (end < s.length && RFC3339_CHARS.has(s[end])) end++;
+  const ts = s.slice(atIdx + 1, end);
+  return { role, ts, end };
+}
 
 function isTextMap(obj: any): boolean {
   return obj !== null && typeof obj === "object" && !Array.isArray(obj) && "text" in obj;
@@ -52,18 +63,17 @@ export function decodeMZ(raw: string, ctx?: any): MZMessage | MZMessage[] {
   let remaining = raw;
 
   while (remaining.length > 0) {
-    const headerMatch = remaining.match(HEADER_RE);
+    const header = parseHeader(remaining);
 
-    if (!headerMatch) {
+    if (!header) {
       if (messages.length === 0) {
         throw new Error("Input does not start with М message header");
       }
       break;
     }
 
-    const role = headerMatch[1];
-    const ts = headerMatch[2];
-    const afterHeader = remaining.substring(headerMatch[0].length);
+    const { role, ts, end } = header;
+    const afterHeader = remaining.slice(end);
 
     const nextMsgIdx = afterHeader.indexOf(MARKERS.MESSAGE_START);
     const payload = nextMsgIdx === -1 ? afterHeader : afterHeader.substring(0, nextMsgIdx);
