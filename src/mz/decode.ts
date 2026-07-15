@@ -23,7 +23,19 @@ export interface MZMessage {
   blocks: MZBlock[];
 }
 
-const RFC3339_CHARS = new Set("0123456789T:-Z+.");
+function isRFC3339Char(code: number): boolean {
+  return (
+    (code >= 48 && code <= 57) || // 0-9
+    code === 84 ||  // T
+    code === 116 || // t
+    code === 90 ||  // Z
+    code === 122 || // z
+    code === 58 ||  // :
+    code === 45 ||  // -
+    code === 43 ||  // +
+    code === 46     // .
+  );
+}
 
 function parseHeader(input: string): { role: string; ts: string; end: number } | null {
   if (!input.startsWith(MARKERS.MESSAGE_START)) return null;
@@ -31,7 +43,7 @@ function parseHeader(input: string): { role: string; ts: string; end: number } |
   if (atIdx === -1) return null;
   const role = input.slice(MARKERS.MESSAGE_START.length, atIdx);
   let end = atIdx + 1;
-  while (end < input.length && RFC3339_CHARS.has(input[end])) end++;
+  while (end < input.length && isRFC3339Char(input.charCodeAt(end))) end++;
   const ts = input.slice(atIdx + 1, end);
   return { role, ts, end };
 }
