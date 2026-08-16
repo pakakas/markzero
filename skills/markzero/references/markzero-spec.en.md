@@ -6,6 +6,7 @@ These markers act as "switches" that instruct the parser to stop routing content
 | Role | Char | Format | Description |
 | :--- | :---: | :--- | :--- |
 | **Message Header Line Marker** | `М` | `М{ROLE}@{rfc3339 timestamp}\n` | Cyrillic Capital Letter EM (U+041C). Declares a Message Header Line that specifies the sender role (`system`, `human`, or `assistant`) and timestamp. The line **must end with a Line Feed (LF / `\n`)**. |
+| **Payload Terminator Marker** | `ε` | `ε` | Greek Small Letter Epsilon (U+03B5). Explicitly terminates a MarkZero payload block. Required when trailing whitespace exists after the payload or when human-readable chat content follows the machine payload block. |
 
 ### 1.1 Encapsulation Rules
 1. **The Switch Concept**: By default, the parser routes incoming document content as chat. Upon encountering a Message Header Line starting with `М` (Cyrillic Capital EM) followed by a valid role, the parser switches the context to "Machine data".
@@ -30,6 +31,14 @@ Here is the user profile you requested:
 ```
 - The parser captures the Message Header Line `Мassistant@2026-06-24T14:56:07Z` and detects the LF (`\n`).
 - The payload starting on the next line `·hyuze·admin░→¤0≡¤1` is sent to the ADN Decoder (`@pakakas/markzero`), which converts it to `[{ hyuze: "admin" }]`.
+
+### 1.3 Payload Terminator Marker (ε)
+1. **Explicit Stream Termination**: The Payload Terminator marker `ε` (Greek Small Letter Epsilon U+03B5) explicitly closes an active MarkZero machine payload block.
+2. **Usage Scenarios**:
+   - **Trailing Whitespace / Newlines**: Required when trailing whitespace or empty lines follow a machine payload block in the same document stream.
+   - **Consecutive Payload Blocks**: Used to separate multiple consecutive payload blocks streamed within the same message context (e.g. `░→a→bε░→c→dε`).
+   - **Interleaved Human Chat**: Required when human-readable chat text immediately follows a machine payload block within the same message (e.g. `░→a→bε\nHere is the summary...`).
+3. **Implicit vs. Explicit**: In the absence of `ε`, the machine payload is terminated implicitly by End of File (EOF), the end of the document chunk, or the appearance of a new Message Header Line (`М`).
 
 ## 2. Inline Decoder Header (System to LLM)
 When the **system** sends ADN data to the LLM, it MAY prepend a **header** before the Message Header Line to help the LLM understand the notation. This header is produced by `buildHeader()` and only lists markers that actually appear in the payload.

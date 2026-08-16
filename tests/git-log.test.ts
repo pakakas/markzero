@@ -1,5 +1,6 @@
 import { test, expect } from "bun:test";
-import { decode, encode } from "../src";
+import { decode } from "../src/adn/decode";
+import { encode } from "../src/adn/encode";
 
 test("Git Log --name-only Use Case (Nested 1D Arrays)", () => {
   const gitLogData = [

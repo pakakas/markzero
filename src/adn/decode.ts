@@ -143,13 +143,26 @@ function decodeGrids(adnString: string, reviver?: Reviver, ctx?: any): any[] {
   let cursor = 0;
   const blockMarkers = [MARKERS.GRID_MARKER];
 
-  const { pos: poolEndRelative } = findBoundary(adnString, [MARKERS.MZ_ENVELOPE_END, MARKERS.GRID_MARKER], 0);
-  const poolEnd = poolEndRelative === NOT_FOUND ? adnString.length : poolEndRelative;
-  cursor = poolEndRelative !== NOT_FOUND && adnString[poolEndRelative] === MARKERS.MZ_ENVELOPE_END ? poolEndRelative + MARKERS.MZ_ENVELOPE_END.length : poolEnd;
+  const firstGridIdx = adnString.indexOf(MARKERS.GRID_MARKER);
+  if (firstGridIdx !== -1) {
+    cursor = firstGridIdx;
+  }
 
-  // Build pool from interned values
-  const poolPart = adnString.substring(0, poolEnd);
-  const pool = splitEscaped(poolPart, MARKERS.VALUE_MARKER).filter(item => item !== "");
+  // Build pool from interned values (supports both top-pool and bottom-pool Attention-First format)
+  const pool: string[] = [];
+  if (firstGridIdx > 0) {
+    const topPart = adnString.substring(0, firstGridIdx);
+    pool.push(...splitEscaped(topPart, MARKERS.VALUE_MARKER).filter(item => item !== ""));
+  }
+  if (firstGridIdx !== -1) {
+    const rearPoolStart = adnString.indexOf(MARKERS.VALUE_MARKER, firstGridIdx);
+    if (rearPoolStart !== -1) {
+      const rearPart = adnString.substring(rearPoolStart);
+      pool.push(...splitEscaped(rearPart, MARKERS.VALUE_MARKER).filter(item => item !== ""));
+    }
+  } else {
+    pool.push(...splitEscaped(adnString, MARKERS.VALUE_MARKER).filter(item => item !== ""));
+  }
 
   const resolve = (value: string): any => {
     let raw: string = value;
@@ -243,15 +256,16 @@ export function decode(adnString: string, ctx?: any): any[] {
     adnString = adnString.substring(MARKERS.MESSAGE_START.length);
   }
 
-  // Build pool for return
-  const { pos: poolEndRelative } = findBoundary(adnString, [MARKERS.MZ_ENVELOPE_END, MARKERS.GRID_MARKER], 0);
-  const poolEnd = poolEndRelative === NOT_FOUND ? adnString.length : poolEndRelative;
-  const poolPart = adnString.substring(0, poolEnd);
-  const pool = splitEscaped(poolPart, MARKERS.VALUE_MARKER).filter(item => item !== "");
-
   const grids = decodeGrids(adnString, reviver, ctx);
-  pool.push(...grids);
-  return pool;
+  if (adnString.startsWith(MARKERS.VALUE_MARKER)) {
+    const { pos: poolEndRelative } = findBoundary(adnString, [MARKERS.MZ_ENVELOPE_END, MARKERS.GRID_MARKER], 0);
+    const poolEnd = poolEndRelative === NOT_FOUND ? adnString.length : poolEndRelative;
+    const poolPart = adnString.substring(0, poolEnd);
+    const pool = splitEscaped(poolPart, MARKERS.VALUE_MARKER).filter(item => item !== "");
+    pool.push(...grids);
+    return pool;
+  }
+  return grids;
 }
 
 export default decode

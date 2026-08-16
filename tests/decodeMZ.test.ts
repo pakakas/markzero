@@ -1,6 +1,6 @@
 import { expect, test, describe } from "bun:test";
-import { decodeMZ } from "./decode";
-import { MARKERS } from "../util";
+import { decode, encode } from "../src/index";
+import { MARKERS } from "../src/util";
 
 const M = MARKERS.MESSAGE_START;
 const G = MARKERS.GRID_MARKER;
@@ -11,7 +11,7 @@ const T = MARKERS.PAYLOAD_TERMINATOR;
 describe("MZ Protocol Decoder", () => {
   test("single message with one data block", () => {
     const input = `${M}assistant@2026-06-24T14:56:07Z\n${G}name${KV}hyuze${R}role${KV}admin`;
-    const result = decodeMZ(input) as any;
+    const result = decode(input) as any;
     expect(result.role).toBe("assistant");
     expect(result.ts).toBe("2026-06-24T14:56:07Z");
     expect(result.blocks.length).toBe(1);
@@ -22,7 +22,7 @@ describe("MZ Protocol Decoder", () => {
 
   test("single message with multiple data blocks separated by ε", () => {
     const input = `${M}assistant@2026-06-24T14:56:07Z\n${G}name${KV}hyuze${T}${G}name${KV}alice`;
-    const result = decodeMZ(input) as any;
+    const result = decode(input) as any;
     expect(result.blocks.length).toBe(2);
     expect(result.blocks[0].payload.name).toBe("hyuze");
     expect(result.blocks[1].payload.name).toBe("alice");
@@ -30,7 +30,7 @@ describe("MZ Protocol Decoder", () => {
 
   test("single message with text block", () => {
     const input = `${M}assistant@2026-06-24T14:56:07Z\n${G}text${KV}Hello world`;
-    const result = decodeMZ(input) as any;
+    const result = decode(input) as any;
     expect(result.blocks.length).toBe(1);
     expect(result.blocks[0].type).toBe("text");
     expect(result.blocks[0].content).toBe("Hello world");
@@ -38,7 +38,7 @@ describe("MZ Protocol Decoder", () => {
 
   test("single message with metadata + data blocks", () => {
     const input = `${M}assistant@2026-06-24T14:56:07Z\n${G}${R}code${KV}json${G}name${KV}hyuze`;
-    const result = decodeMZ(input) as any;
+    const result = decode(input) as any;
     expect(result.blocks.length).toBe(1);
     expect(result.blocks[0].type).toBe("data");
     expect(result.blocks[0].code).toBe("json");
@@ -47,7 +47,7 @@ describe("MZ Protocol Decoder", () => {
 
   test("single message with mixed text + data blocks", () => {
     const input = `${M}assistant@2026-06-24T14:56:07Z\n${G}text${KV}Here is data:${G}name${KV}hyuze`;
-    const result = decodeMZ(input) as any;
+    const result = decode(input) as any;
     expect(result.blocks.length).toBe(2);
     expect(result.blocks[0].type).toBe("text");
     expect(result.blocks[0].content).toBe("Here is data:");
@@ -60,7 +60,7 @@ describe("MZ Protocol Decoder", () => {
       `${M}assistant@2026-06-24T14:56:07Z\n${G}name${KV}hyuze` +
       `${M}human@2026-06-24T14:56:30Z\n${G}error${KV}count` +
       `${M}system@2026-06-24T14:56:35Z\n${G}status${KV}ok`;
-    const result = decodeMZ(input) as any[];
+    const result = decode(input) as any[];
     expect(Array.isArray(result)).toBe(true);
     expect(result.length).toBe(3);
     expect(result[0].role).toBe("assistant");
@@ -75,7 +75,7 @@ describe("MZ Protocol Decoder", () => {
     const input =
       `${M}assistant@2026-06-24T14:56:07Z\n${G}text${KV}Hello${G}name${KV}hyuze` +
       `${M}human@2026-06-24T14:56:30Z\n${G}text${KV}Thanks`;
-    const result = decodeMZ(input) as any[];
+    const result = decode(input) as any[];
     expect(result.length).toBe(2);
     expect(result[0].blocks[0].type).toBe("text");
     expect(result[0].blocks[0].content).toBe("Hello");
@@ -87,24 +87,35 @@ describe("MZ Protocol Decoder", () => {
 
   test("metadata without following data grid becomes standalone data block", () => {
     const input = `${M}assistant@2026-06-24T14:56:07Z\n${G}${R}code${KV}ts`;
-    const result = decodeMZ(input) as any;
+    const result = decode(input) as any;
     expect(result.blocks.length).toBe(1);
     expect(result.blocks[0].type).toBe("data");
     expect(result.blocks[0].payload.code).toBe("ts");
   });
 
   test("throws on empty input", () => {
-    expect(() => decodeMZ("")).toThrow("Input string is required");
+    expect(() => decode("")).toThrow("Input string is required");
   });
 
   test("throws on input without М header", () => {
-    expect(() => decodeMZ("░→name≡hyuze")).toThrow("does not start with М");
+    const raw = MARKERS.GRID_MARKER + MARKERS.ROW_MARKER + "name" + MARKERS.KV_RELATION + "hyuze";
+    expect(() => decode(raw)).toThrow(`does not start with ${MARKERS.MESSAGE_START}`);
   });
 
   test("single message return object, stream return array", () => {
     const single = `${M}assistant@2026-06-24T14:56:07Z\n${G}name${KV}hyuze`;
     const stream = single + `${M}human@2026-06-24T14:56:30Z\n${G}x${KV}y`;
-    expect(typeof decodeMZ(single)).toBe("object");
-    expect(Array.isArray(decodeMZ(stream))).toBe(true);
+    expect(typeof decode(single)).toBe("object");
+    expect(Array.isArray(decode(stream))).toBe(true);
+  });
+
+  test("encode and decode roundtrip for MarkZero Message", () => {
+    const msg = {
+      role: "assistant",
+      ts: "2026-06-24T14:56:07Z",
+      content: "Hello world"
+    };
+    const encoded = encode(msg);
+    expect(encoded).toContain(`${MARKERS.MESSAGE_START}assistant@2026-06-24T14:56:07Z\nHello world`);
   });
 });

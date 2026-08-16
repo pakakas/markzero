@@ -74,6 +74,8 @@ export const NOT_FOUND = -1;
 export const ENC_VALUES = 1;
 export const ENC_INTERN_ALL = 2;
 export const ENC_GRID_DEDUPLICATE = 4;
+export const ENC_INTERN_LAST = 8;
+export const ENC_INTERN_FIRST = 16;
 
 export function isProfitable(frequency: number, tokenLength: number, indexLength: number): boolean {
   const refCost = 1 + indexLength; // VALUE_REF (1) + index digits

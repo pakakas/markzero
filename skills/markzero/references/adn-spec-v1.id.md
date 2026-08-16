@@ -37,7 +37,6 @@ Melalui desain kolaboratif dan penyempurnaan filosofis, sistem representasi logi
 | **Relation Binder** | `≡` | U+2261 (IDENTICAL TO) | Mengikat kunci (*key*) ke nilai (*value*) pada properti Map. |
 | **Value Ref** | `¤` | U+00A4 (CURRENCY SIGN) | Portal ke sebuah string ter-intern di dalam intern pool (berdasarkan Indeks). |
 | **Grid Ref** | `※` | U+203B (REFERENCE MARK) | Portal ke blok data yang telah didefinisikan sebelumnya (berdasarkan Indeks). |
-| **Payload Terminator** | `ε` | U+03B5 (GREEK SMALL LETTER EPSILON) | Opsional. Mengakhiri blok payload ADN secara eksplisit. Diperlukan ketika ada whitespace trailing setelah payload atau ketika konten yang dapat dibaca manusia mengikuti blok ADN. |
 | **True** | `◆` | U+25C6 (BLACK DIAMOND) | Nilai boolean true. |
 | **False** | `◇` | U+25C7 (WHITE DIAMOND) | Nilai boolean false. |
 | **Null** | `○` | U+25CB (WHITE CIRCLE) | Nilai null / kosong. |
@@ -54,8 +53,7 @@ ADN dilengkapi fitur-fitur mutakhir yang dirancang untuk efisiensi data ekstrem 
 
 ### 2.1 Payload & Aturan Struktural
 - **Pure ADN**: Payload ADN tidak memiliki batasan seperti bracket atau marker envelope. Payload terdiri dari intern pool opsional yang diikuti satu atau lebih blok data.
-- **Intern Pool**: Intern pool adalah blok string yang diawali `·`. Bersifat opsional — hanya ada jika data mengandung Value Reference (`¤`).
-- **Payload Terminator**: Blok payload ADN BOLEH diakhiri oleh `ε` (Payload Terminator). Ini bersifat opsional — tanpa `ε`, payload diakhiri secara implisit oleh EOF, akhir chunk dokumen, atau awal blok ADN berikutnya. `ε` diperlukan ketika ada whitespace trailing setelah payload atau ketika konten yang dapat dibaca manusia mengikuti blok ADN di dokumen yang sama.
+- **Intern Pool**: Intern pool adalah blok string yang diawali `·`. Bersifat opsional — hanya ada jika data mengandung Value Reference (`¤`). Secara default (Intern-Last), intern pool diletakkan di akhir blok payload (setelah `░`), memungkinkan atensi LLM untuk fokus pada skema struktural terlebih dahulu. Dekoder mendukung intern pool yang berada di depan (Intern-First) maupun di belakang (Intern-Last) secara transparan.
 
 ### 2.2 Grid
 - **Kebutuhan Grid**: Payload ADN yang valid harus mengandung setidaknya satu grid (`░`).

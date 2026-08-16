@@ -1,5 +1,7 @@
 import { test, expect, describe } from "bun:test";
-import { encode, decode, ENC_VALUES } from "../src/index";
+import { encode } from "../src/adn/encode";
+import { decode } from "../src/adn/decode";
+import { ENC_VALUES } from "../src/index";
 import {
   MARKERS,
   MZ_ID,
@@ -24,11 +26,11 @@ describe("MarkZero Data Formatting", () => {
   test("1D Set (List) with explicit row marker on first row", () => {
     // Both forms are valid: anon (no leading ROW_MARKER) and explicit (with leading ROW_MARKER).
     // Decoder must accept either form.
-    const explicit = "░→apple→banana→cherry";
+    const explicit = MARKERS.GRID_MARKER + MARKERS.ROW_MARKER + "apple" + MARKERS.ROW_MARKER + "banana" + MARKERS.ROW_MARKER + "cherry";
     const decodedExplicit = decode(explicit);
     expect(decodedExplicit[0]).toEqual(["apple", "banana", "cherry"]);
 
-    const anon = "░apple→banana→cherry";
+    const anon = MARKERS.GRID_MARKER + "apple" + MARKERS.ROW_MARKER + "banana" + MARKERS.ROW_MARKER + "cherry";
     const decodedAnon = decode(anon);
     expect(decodedAnon[0]).toEqual(["apple", "banana", "cherry"]);
   });
@@ -62,7 +64,7 @@ describe("MarkZero Data Formatting", () => {
 
   test("Implicit/Contextual Escaping (UPPER_CASE_PLACEHOLDER & Context-Based Decoding)", () => {
     const data = {
-      note: "Sign: М, Marker: ░, Row: →"
+      note: `Sign: ${MARKERS.MESSAGE_START}, Marker: ${MARKERS.GRID_MARKER}, Row: ${MARKERS.ROW_MARKER}`
     };
     const encoded = encode(data);
     // Serialized output should use UPPER_CASE_PLACEHOLDER constants
@@ -74,9 +76,9 @@ describe("MarkZero Data Formatting", () => {
     const context = {
       unescape: (text: string) => {
         return text
-          .replaceAll("MESSAGE_START", "М")
-          .replaceAll("GRID_MARKER", "░")
-          .replaceAll("ROW_MARKER", "→");
+          .replaceAll("MESSAGE_START", MARKERS.MESSAGE_START)
+          .replaceAll("GRID_MARKER", MARKERS.GRID_MARKER)
+          .replaceAll("ROW_MARKER", MARKERS.ROW_MARKER);
       }
     };
     const decoded = decode(encoded, context);
@@ -90,15 +92,15 @@ describe("MarkZero Data Formatting", () => {
 
   test("Implicit/Contextual Escaping with Custom Context Escaper", () => {
     const data = {
-      note: "Sign: М, Marker: ░, Row: →"
+      note: `Sign: ${MARKERS.MESSAGE_START}, Marker: ${MARKERS.GRID_MARKER}, Row: ${MARKERS.ROW_MARKER}`
     };
     // Custom context that replaces markers with a custom notation
     const context = {
       escaper: (text: string) => {
         return text
-          .replaceAll("М", "[START]")
-          .replaceAll("░", "[GRID]")
-          .replaceAll("→", "[ROW]");
+          .replaceAll(MARKERS.MESSAGE_START, "[START]")
+          .replaceAll(MARKERS.GRID_MARKER, "[GRID]")
+          .replaceAll(MARKERS.ROW_MARKER, "[ROW]");
       }
     };
     const encoded = encode(data, context);

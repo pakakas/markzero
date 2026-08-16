@@ -2,15 +2,18 @@ export {
   ENC_INTERN_ALL,
   ENC_VALUES,
   ENC_GRID_DEDUPLICATE,
+  ENC_INTERN_LAST,
+  ENC_INTERN_FIRST,
   MARKERS,
   TITLE_SYMBOL,
 } from "./util";
-// export { PROTO_START, PROTO_END, buildHeader, addInlineDecoder } from "./encode";
 
-//deprecated
-export { encode } from './adn/encode'
-export { decode } from './adn/decode'
-export type { Reviver } from './adn/decode'
-
-export { decodeMZ } from './mz/decode'
-export type { MZMessage, MZBlock, MZBlockType, MZTextBlock, MZDataBlock, MZInvokeBlock } from './mz/decode'
+export { encode } from "./encode";
+export { decode, MESSAGE_START, PAYLOAD_TERMINATOR, buildHeader, addInlineDecoder } from "./decode";
+export type {
+  Message,
+  Block,
+  BlockType,
+  TextBlock,
+  DataBlock,
+} from "./decode";

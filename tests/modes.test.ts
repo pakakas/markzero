@@ -1,5 +1,6 @@
 import { test, expect } from "bun:test";
-import { encode, ENC_VALUES, ENC_INTERN_ALL } from "../src/index";
+import { encode } from "../src/adn/encode";
+import { ENC_VALUES, ENC_INTERN_ALL } from "../src/index";
 import { MARKERS } from "../src/util";
 
 const data = [

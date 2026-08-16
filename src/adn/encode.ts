@@ -5,6 +5,8 @@ import {
   ENC_VALUES,
   ENC_INTERN_ALL,
   ENC_GRID_DEDUPLICATE,
+  ENC_INTERN_LAST,
+  ENC_INTERN_FIRST,
   estimateTokenCount,
   isProfitable,
 } from "../util";
@@ -315,7 +317,10 @@ export function encode(input: any, encodingModeOrContext?: any, context?: any): 
   const mainBlock = createMainBlock(input, encodeFn);
 
   const poolStr = pool.length > 0 ? MARKERS.VALUE_MARKER + pool.join(MARKERS.VALUE_MARKER) : "";
-  return poolStr + mainBlock + blocks.join("");
+  if ((mode & ENC_INTERN_FIRST) !== 0) {
+    return poolStr + mainBlock + blocks.join("");
+  }
+  return mainBlock + blocks.join("") + poolStr;
 }
 
 export default encode

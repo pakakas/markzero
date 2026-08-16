@@ -5,7 +5,8 @@ Marker-marker ini berfungsi sebagai "saklar" yang menginstruksikan parser untuk 
 
 | Peran | Char | Format | Deskripsi |
 | :--- | :---: | :--- | :--- |
-| **Message Header Line Marker** | `М` | `М{ROLE}@{rfc3339 timestamp}\n` | Cyrillic Capital Letter EM (U+041C). Deklarasi Message Header Line yang menentukan peran pengirim (`system`, `human`, atau `assistant`) and timestamp. Baris ini **harus diakhiri dengan Line Feed (LF / `\n`)**. |
+| **Message Header Line Marker** | `М` | `М{ROLE}@{rfc3339 timestamp}\n` | Cyrillic Capital Letter EM (U+041C). Deklarasi Message Header Line yang menentukan peran pengirim (`system`, `human`, atau `assistant`) dan timestamp. Baris ini **harus diakhiri dengan Line Feed (LF / `\n`)**. |
+| **Payload Terminator Marker** | `ε` | `ε` | Greek Small Letter Epsilon (U+03B5). Mengakhiri blok payload MarkZero secara eksplisit. Diperlukan ketika ada whitespace trailing setelah payload atau ketika konten chat yang dapat dibaca manusia mengikuti blok payload data mesin. |
 
 ### 1.1 Aturan Enkapsulasi
 1. **Konsep Saklar**: Secara default, parser mengalirkan konten dokumen sebagai chat. Begitu menemukan Message Header Line yang diawali dengan `М` (Cyrillic Capital EM) diikuti oleh peran yang valid, parser mengalihkan konteks ke "Data mesin".
@@ -30,6 +31,14 @@ Here is the user profile you requested:
 ```
 - Parser menangkap Message Header Line `Мassistant@2026-06-24T14:56:07Z` dan mendeteksi LF (`\n`).
 - Payload yang dimulai pada baris berikutnya `·hyuze·admin░→¤0≡¤1` dikirim ke ADN Decoder (`@pakakas/markzero`), yang mengkonversinya ke `{ hyuze: "admin" }`.
+
+### 1.3 Penanda Payload Terminator (ε)
+1. **Terminasi Stream Eksplisit**: Penanda Payload Terminator `ε` (Greek Small Letter Epsilon U+03B5) menutup blok payload data mesin MarkZero secara eksplisit.
+2. **Skenario Penggunaan**:
+   - **Whitespace / Baris Baru Trailing**: Diperlukan ketika terdapat karakter whitespace atau baris kosong setelah blok payload data mesin di dalam stream dokumen yang sama.
+   - **Blok Payload Berurutan**: Digunakan untuk memisahkan beberapa blok payload berurutan yang di-stream dalam konteks pesan yang sama (contoh: `░→a→bε░→c→dε`).
+   - **Teks Chat Manusia Mengikuti**: Wajib ada ketika teks chat yang dapat dibaca manusia langsung mengikuti blok payload data mesin di dalam pesan yang sama (contoh: `░→a→bε\nBerikut adalah ringkasannya...`).
+3. **Implisit vs. Eksplisit**: Tanpa adanya `ε`, payload data mesin diakhiri secara implisit oleh End of File (EOF), akhir chunk dokumen, atau kemunculan Message Header Line baru (`М`).
 
 ## 2. Inline Decoder Header (System to LLM)
 Ketika **system** mengirim data ADN ke LLM, ia BISA menambahkan **header** sebelum Message Header Line untuk membantu LLM memahami notasi. Header ini dihasilkan oleh `buildHeader()` dan hanya menampilkan marker yang benar-benar muncul di payload.

@@ -1,5 +1,6 @@
 import { test, expect } from "bun:test";
-import { decode, encode } from "../src";
+import { decode } from "../src/adn/decode";
+import { encode } from "../src/adn/encode";
 import { MARKERS } from "../src/util";
 
 test("Decoding Unified Blocks (Trading)", () => {

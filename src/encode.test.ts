@@ -1,5 +1,7 @@
 import { expect, test, describe } from "bun:test";
-import { encode, decode, ENC_GRID_DEDUPLICATE } from "./index";
+import { encode } from "./adn/encode";
+import { decode } from "./adn/decode";
+import { ENC_GRID_DEDUPLICATE } from "./index";
 import { MARKERS } from "./util";
 
 describe("MarkZero Encoder (Default Mode)", () => {
@@ -194,7 +196,11 @@ describe("MarkZero Encoder (Default Mode)", () => {
 
   test("resolves valid nested grid references (GRID_REF 1) and resolves invalid/out-of-bounds references to null", () => {
     // 1. Valid nesting (GRID_REF 1 resolves to the nested object) & Negative test for GRID_REF 2 (out of bounds)
-    const payloadValid = "░→name≡hyu→info≡※1→missing2≡※2░→role≡admin";
+    const payloadValid =
+      MARKERS.GRID_MARKER + MARKERS.ROW_MARKER + "name" + MARKERS.KV_RELATION + "hyu" +
+      MARKERS.ROW_MARKER + "info" + MARKERS.KV_RELATION + MARKERS.GRID_REF + "1" +
+      MARKERS.ROW_MARKER + "missing2" + MARKERS.KV_RELATION + MARKERS.GRID_REF + "2" +
+      MARKERS.GRID_MARKER + MARKERS.ROW_MARKER + "role" + MARKERS.KV_RELATION + "admin";
     const decodedValid = decode(payloadValid);
     const rootValid = decodedValid[0];
     expect(rootValid.name).toBe("hyu");
@@ -202,13 +208,13 @@ describe("MarkZero Encoder (Default Mode)", () => {
     expect(rootValid.missing2).toBeNull(); // GRID_REF 2 is out of bounds, should resolve to null
 
     // 2. GRID_REF 0 reference (parent grid reference) resolves to null (biar hemat)
-    const payloadParentRef = "░→self≡※0";
+    const payloadParentRef = MARKERS.GRID_MARKER + MARKERS.ROW_MARKER + "self" + MARKERS.KV_RELATION + MARKERS.GRID_REF + "0";
     const decodedParentRef = decode(payloadParentRef);
     const rootParentRef = decodedParentRef[0];
     expect(rootParentRef.self).toBeNull();
 
     // 3. Out-of-bounds reference (GRID_REF 99) resolves to null
-    const payloadOutOfBounds = "░→missing≡※99";
+    const payloadOutOfBounds = MARKERS.GRID_MARKER + MARKERS.ROW_MARKER + "missing" + MARKERS.KV_RELATION + MARKERS.GRID_REF + "99";
     const decodedOutOfBounds = decode(payloadOutOfBounds);
     const rootOutOfBounds = decodedOutOfBounds[0];
     expect(rootOutOfBounds.missing).toBeNull();
@@ -216,17 +222,17 @@ describe("MarkZero Encoder (Default Mode)", () => {
 
   test("GRID_REF edge cases: malformed references resolve correctly", () => {
     // ※ without number → parseInt("") = NaN → null
-    const payloadNoNum = "░→x≡※";
+    const payloadNoNum = MARKERS.GRID_MARKER + MARKERS.ROW_MARKER + "x" + MARKERS.KV_RELATION + MARKERS.GRID_REF;
     const decodedNoNum = decode(payloadNoNum);
     expect(decodedNoNum[0].x).toBeNull();
 
     // ※ + non-digit suffix → parseInt("abc") = NaN → null
-    const payloadNonDigit = "░→x≡※abc";
+    const payloadNonDigit = MARKERS.GRID_MARKER + MARKERS.ROW_MARKER + "x" + MARKERS.KV_RELATION + MARKERS.GRID_REF + "abc";
     const decodedNonDigit = decode(payloadNonDigit);
     expect(decodedNonDigit[0].x).toBeNull();
 
     // ※ + negative index → parseInt("-1") = -1 → null (index -1 not in array)
-    const payloadNegative = "░→x≡※-1";
+    const payloadNegative = MARKERS.GRID_MARKER + MARKERS.ROW_MARKER + "x" + MARKERS.KV_RELATION + MARKERS.GRID_REF + "-1";
     const decodedNegative = decode(payloadNegative);
     expect(decodedNegative[0].x).toBeNull();
   });
@@ -235,7 +241,10 @@ describe("MarkZero Encoder (Default Mode)", () => {
     // Grid 0: root → data ≡ ※1
     // Grid 1: child → items ≡ ※2
     // Grid 2: leaf → ["x", "y"]
-    const payload = "░→data≡※1░→items≡※2░→x→y";
+    const payload =
+      MARKERS.GRID_MARKER + MARKERS.ROW_MARKER + "data" + MARKERS.KV_RELATION + MARKERS.GRID_REF + "1" +
+      MARKERS.GRID_MARKER + MARKERS.ROW_MARKER + "items" + MARKERS.KV_RELATION + MARKERS.GRID_REF + "2" +
+      MARKERS.GRID_MARKER + MARKERS.ROW_MARKER + "x" + MARKERS.ROW_MARKER + "y";
     const decoded = decode(payload);
     const root = decoded[0];
     expect(root.data.items[0]).toBe("x");
@@ -245,14 +254,18 @@ describe("MarkZero Encoder (Default Mode)", () => {
   test("circular 2-grid reference: grid0→※1, grid1→※0 resolves gracefully", () => {
     // Grid 0 has ref to grid 1, grid 1 has ref to grid 0 (parent)
     // ※0 always resolves to null → no infinite loop
-    const payload = "░→x≡※1░→ref≡※0";
+    const payload =
+      MARKERS.GRID_MARKER + MARKERS.ROW_MARKER + "x" + MARKERS.KV_RELATION + MARKERS.GRID_REF + "1" +
+      MARKERS.GRID_MARKER + MARKERS.ROW_MARKER + "ref" + MARKERS.KV_RELATION + MARKERS.GRID_REF + "0";
     const decoded = decode(payload);
     const root = decoded[0];
     expect(root.x.ref).toBeNull(); // ※0 → null
   });
 
   test("undefined grid (※N where N never defined) resolves to null", () => {
-    const payload = "░→a≡※5→b≡※3";
+    const payload =
+      MARKERS.GRID_MARKER + MARKERS.ROW_MARKER + "a" + MARKERS.KV_RELATION + MARKERS.GRID_REF + "5" +
+      MARKERS.ROW_MARKER + "b" + MARKERS.KV_RELATION + MARKERS.GRID_REF + "3";
     const decoded = decode(payload);
     expect(decoded[0].a).toBeNull();
     expect(decoded[0].b).toBeNull();
