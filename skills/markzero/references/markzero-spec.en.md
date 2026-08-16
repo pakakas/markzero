@@ -1,4 +1,4 @@
-# MarkZero Protocol Specification (v1)
+# MarkZero Specification (v1)
 
 ## 1. Protocol Document Markers (The Message Header Line)
 These markers act as "switches" that instruct the parser to stop routing content to chat and start routing it to the machine decoder (and vice versa).

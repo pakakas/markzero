@@ -1,4 +1,4 @@
-# Spesifikasi Protokol MarkZero (v1)
+# Spesifikasi MarkZero (v1)
 
 ## 1. Protocol Document Markers (Message Header Line)
 Marker-marker ini berfungsi sebagai "saklar" yang menginstruksikan parser untuk berhenti mengirim konten ke chat dan mulai mengirim ke decoder mesin (dan sebaliknya).
