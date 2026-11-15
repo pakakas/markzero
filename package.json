@@ -1,7 +1,7 @@
 {
   "name": "@pakakas/markzero",
   "version": "1.0.0-dev",
-  "description": "MarkZero (MZ) - An ultra-efficient, AI-native Agent Data Notation (Agent IR) serialization format, parsed by the MZHAO engine.",
+  "description": "MarkZero (MZ) - An ultra-efficient, AI-native Agent Data Notation",
   "type": "module",
   "main": "src/index.ts",
   "license": "ISC",
@@ -14,7 +14,5 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@pakakas/token": "^1.0.0",
-    "@pakakas/mz-agent-tool-adapters": "^1.0.0-dev"
   }
 }
